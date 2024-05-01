@@ -1,7 +1,7 @@
 === Pathao Integration for WooCommerce ===
 Contributors: springdevs, naminbd, ok9xnirab
 Donate link: http://springdevs.com/
-Tags: pathao, pathao-shipping, woocommerce-shipping, pathao integration, pathao courier, bd courier, bd shipping
+Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
 Tested up to: 6.5
 Stable tag: 1.0.7
