@@ -63,6 +63,14 @@ Explore our [Premium Version here](https://springdevs.com/plugin/pathao).
     3. Activate the `Integration of Pathao for WooCommerce` plugin.
 ```
 
+== Frequently Asked Questions ==
+=Is this plugin compatible with WooCommerce block pages ?=
+No, This plugin isn't fully compatible with WooCommerce block pages. You need to continue with shortcode pages.
+=Is it compatible with all WordPress themes ?=
+Compatibility with all themes is impossible, because there are too many, but generally if themes are developed according to WordPress and WooCommerce guidelines, **Pathao Integration for WooCommerce** is compatible with them.
+Sometimes, especially when new versions are released, it might only require some time for them to be all updated, but you can be sure that they will be tested and will be working in a few days.
+
+
 == Screenshots ==
 
 1.  Settings page
@@ -74,7 +82,7 @@ Explore our [Premium Version here](https://springdevs.com/plugin/pathao).
 
 = 1.0.8 = 
 
-*   Error message doesn't display when success is false.
+*   **Fix:** Error message doesn't display when success is false.
 *   Ready for v1.3 pro version.
 
  = 1.0.7 =
