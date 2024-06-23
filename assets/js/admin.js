@@ -269,6 +269,14 @@ jQuery(document).ready(function ($) {
 					$('#pathao_submit_shipping').prop('disabled', false);
 					$('.pathao-shipping-spinner').removeClass('is-active');
 					const errors = res.errors;
+					if (!errors && res.message) {
+						$.toast({
+							position: 'bottom-center',
+							text: res.message,
+							icon: 'error',
+							hideAfter: 6000,
+						});
+					}
 					$.each(errors, function (key, value) {
 						$.toast({
 							position: 'bottom-center',

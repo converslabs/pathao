@@ -4,6 +4,11 @@ Pathao integration for WooCommerce
 
 ## Changelog
 
+### 1.0.8
+
+-   Error message doesn't display when success is false.
+-   Ready for v1.3 pro version.
+
 ### 1.0.7
 
 -   Settings page updated.

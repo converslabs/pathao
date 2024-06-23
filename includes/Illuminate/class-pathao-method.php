@@ -147,7 +147,7 @@ function sdevs_pathao_shipping_method_init() {
 						'title'             => __( 'Default Item Weight (KG)', 'sdevs_pathao' ),
 						'type'              => 'number',
 						'custom_attributes' => array(
-							'steps'    => 'any',
+							'step'     => '0.1',
 							'min'      => '0.1',
 							'max'      => '200.0',
 							'required' => 'required',

@@ -46,14 +46,17 @@ class Order {
 		? wc_get_page_screen_id( 'shop-order' )
 		: 'shop_order';
 
-		add_meta_box(
-			'pathao_order_wc',
-			__( 'Pathao Shipping', 'sdevs_pathao' ),
-			array( $this, 'pathao_shipping' ),
-			$screen,
-			'side',
-			'default'
-		);
+		// phpcs:ignore
+		if (  isset( $_GET['action'] ) && 'edit' === $_GET['action']) {
+			add_meta_box(
+				'pathao_order_wc',
+				__( 'Pathao Shipping', 'sdevs_pathao' ),
+				array( $this, 'pathao_shipping' ),
+				$screen,
+				'side',
+				'default'
+			);
+		}
 	}
 
 	/**

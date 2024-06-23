@@ -4,7 +4,7 @@ Donate link: http://springdevs.com/
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
 Tested up to: 6.5
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -71,6 +71,11 @@ Explore our [Premium Version here](https://springdevs.com/plugin/pathao).
 4.  Pathao order status
 
 == Changelog ==
+
+= 1.0.8 = 
+
+*   Error message doesn't display when success is false.
+*   Ready for v1.3 pro version.
 
  = 1.0.7 =
 
