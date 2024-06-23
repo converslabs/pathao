@@ -4,7 +4,7 @@ Donate link: http://springdevs.com/
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
 Tested up to: 6.5
-Stable tag: 1.0.8
+Stable tag: trunk
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
