@@ -52,7 +52,7 @@
 	</p>
 	<p class="form-field">
 		<label for="pathao_item_description"><b>Item Description</b></label>
-		<textarea style="width: 100%;" id="pathao_item_description" name="pathao_item_description"></textarea>
+		<textarea style="width: 100%;" id="pathao_item_description" name="pathao_item_description"><?php echo esc_html( trim( $item_description ) ); ?></textarea>
 	</p>
 	<p class="form-field">
 		<label for="pathao_special_instruction"><b>Special Instruction</b></label>

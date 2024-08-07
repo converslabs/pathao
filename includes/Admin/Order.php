@@ -116,15 +116,18 @@ class Order {
 
 		$amount = is_sdevs_pathao_pro_activated() && $order->has_status( substr( sdevs_pathao_settings( 'paid_order_status', 'wc-paid' ), 3 ) ) ? 0 : $order->get_total();
 
-		$total_weight = 0;
+		$total_weight     = 0;
+		$item_description = array();
 		foreach ( $order->get_items() as $order_item ) {
 			$product = $order_item->get_product();
 			if ( ! $product->is_virtual() ) {
+				array_push( $item_description, "{$order_item->get_name()}(x{$order_item->get_quantity()})" );
 				$total_weight += empty( $product->get_weight() ) ? 0 : intval( $product->get_weight() ) * $order_item['quantity'];
 			}
 		}
-		$total_weight = floatval( max( $total_weight, 0.5 ) );
-		$status       = $order->get_meta( '_pathao_order_status' );
+		$total_weight     = floatval( max( $total_weight, 0.5 ) );
+		$status           = $order->get_meta( '_pathao_order_status' );
+		$item_description = implode( ', ', $item_description );
 
 		include 'views/pathao-shipping.php';
 	}

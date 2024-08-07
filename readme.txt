@@ -3,7 +3,7 @@ Contributors: springdevs, naminbd, ok9xnirab
 Donate link: http://springdevs.com/
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
-Tested up to: 6.5
+Tested up to: 6.6
 Stable tag: trunk
 Requires PHP: 7.0
 License: GPLv2 or later
@@ -79,6 +79,9 @@ Sometimes, especially when new versions are released, it might only require some
 4.  Pathao order status
 
 == Changelog ==
+
+= 1.0.9 = 
+* **Update:** Autofill item description field.
 
 = 1.0.8 = 
 
