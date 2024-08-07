@@ -83,6 +83,8 @@ function sdevs_pathao_shipping_method_init() {
 					$this->update_option( 'area_field', 'display_required' );
 					$this->update_option( 'delivery_type', 48 );
 					$this->update_option( 'default_weight', 0.5 );
+					$this->update_option( 'custom_order_status', 'yes' );
+					$this->update_option( 'paid_order_status', 'wc-paid' );
 					$this->update_option( 'at_the_sorting_hub_status', 'wc-in-shipment' );
 					$this->update_option( 'pickup_failed_status', 'wc-processing' );
 					$this->update_option( 'delivered_status', 'wc-completed' );
@@ -155,6 +157,22 @@ function sdevs_pathao_shipping_method_init() {
 						'description'       => __( 'This value will be replaced when total weight of order is 0 ! Minimum 0.1 KG to Maximum 200 KG', 'sdevs_pathao' ),
 						'default'           => 0.5,
 						'disabled'          => ! is_sdevs_pathao_pro_activated(),
+					),
+					'custom_order_status'       => array(
+						'title'       => __( 'Custom Order Statuses', 'sdevs_pathao' ),
+						'type'        => 'checkbox',
+						'options'     => $order_statuses,
+						'description' => __( 'Enable helpfull statuses for order (In shipment, Paid, Shipment failed).', 'sdevs_pathao' ),
+						'default'     => 'yes',
+						'disabled'    => ! is_sdevs_pathao_pro_activated(),
+					),
+					'paid_order_status'         => array(
+						'title'       => __( 'Order Status For Paid', 'sdevs_pathao' ),
+						'type'        => 'select',
+						'options'     => $order_statuses,
+						'description' => __( 'When order is paid, the `Amount to Collect` will be 0.', 'sdevs_pathao' ),
+						'default'     => 'wc-paid',
+						'disabled'    => ! is_sdevs_pathao_pro_activated(),
 					),
 					'at_the_sorting_hub_status' => array(
 						'title'       => __( 'Order Status For At the Sorting HUB', 'sdevs_pathao' ),

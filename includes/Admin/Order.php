@@ -114,7 +114,7 @@ class Order {
 		$cities = sdevs_get_pathao_data( 'aladdin/api/v1/countries/1/city-list' );
 		$cities = $cities && 'success' === $cities->type ? $cities->data->data : array();
 
-		$amount = $order->has_status( 'paid' ) ? 0 : $order->get_total();
+		$amount = is_sdevs_pathao_pro_activated() && $order->has_status( substr( sdevs_pathao_settings( 'paid_order_status', 'wc-paid' ), 3 ) ) ? 0 : $order->get_total();
 
 		$total_weight = 0;
 		foreach ( $order->get_items() as $order_item ) {

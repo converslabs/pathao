@@ -3,6 +3,7 @@
  * All our plugins custom functions.
  *
  * @since 1.0.0
+ *
  * phpcs:ignore Squiz.Commenting.FileComment.MissingPackageTag
  */
 
@@ -77,7 +78,7 @@ function sdevs_get_pathao_data( string $endpoint ) {
  * Send request on pathao server.
  *
  * @param string $endpoint Endpoint.
- * @param array $body Body.
+ * @param array  $body Body.
  *
  * @return mixed|object [object]
  */
@@ -154,13 +155,14 @@ function sdevs_pathao_store_id() {
  * Get settings by key.
  *
  * @param string $key Key.
+ * @param mixed  $default_value Default value.
  *
  * @return mixed
  */
-function sdevs_pathao_settings( string $key ) {
+function sdevs_pathao_settings( string $key, $default_value = false ) {
 	$settings = get_option( 'woocommerce_pathao_settings' );
 
-	return $settings && is_array( $settings ) ? $settings[ $key ] : false;
+	return $settings && is_array( $settings ) && isset( $settings[ $key ] ) ? $settings[ $key ] : $default_value;
 }
 
 /**
