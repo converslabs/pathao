@@ -15,6 +15,64 @@ class Order {
 	public function __construct() {
 		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
 		add_action( 'pathao_order_created', array( $this, 'store_log_after_creation' ) );
+
+		// order columns.
+		add_filter( 'manage_edit-shop_order_columns', array( $this, 'add_custom_columns' ) );
+		add_filter( 'woocommerce_shop_order_list_table_columns', array( $this, 'add_custom_columns' ) );
+		add_action( 'manage_shop_order_posts_custom_column', array( $this, 'add_custom_columns_data' ), 10, 2 );
+		add_action( 'init', array( $this, 'load_hpos_hooks' ) );
+	}
+
+	/**
+	 * Load HPOS hooks here else `wc_get_page_screen_id` isn't available.
+	 */
+	public function load_hpos_hooks() {
+		add_action( 'manage_' . wc_get_page_screen_id( 'shop_order' ) . '_custom_column', array( $this, 'add_custom_columns_data' ), 10, 2 );
+	}
+
+	/**
+	 * Add Custom Column to Orders Table.
+	 *
+	 * @param array $columns Columns.
+	 *
+	 * @return array
+	 */
+	public function add_custom_columns( $columns ) {
+		$columns['sdevs_pathao_order_column'] = __( 'Pathao', 'sdevs_pathao' );
+		return $columns;
+	}
+
+	/**
+	 * Add Custom Column Data.
+	 *
+	 * @param string        $column Column ID.
+	 * @param int|\WC_Order $post_id post_id or Order Obj.
+	 */
+	public function add_custom_columns_data( $column, $post_id ) {
+		if ( 'sdevs_pathao_order_column' === $column ) :
+			// check if post_id is order object.
+			$order = $post_id;
+			if ( 'object' !== gettype( $post_id ) ) {
+				$order = wc_get_order( $post_id );
+			}
+			$consignment_id = $order->get_meta( '_pathao_consignment_id' );
+			$status         = $order->get_meta( '_pathao_order_status' );
+
+			?>
+			<div>
+				<?php if ( $consignment_id ) : ?>
+					<p>
+						<code>
+							<?php echo esc_html( $consignment_id ); ?>
+						</code>
+					</p>
+					<p><b>(<?php echo esc_html( $status ); ?>)</b></p>
+				<?php else : ?>
+					<p>-</p>
+				<?php endif; ?>
+			</div>
+			<?php
+		endif;
 	}
 
 	/**
@@ -32,7 +90,7 @@ class Order {
 				'consignment_id'    => $res->consignment_id,
 				'order_status'      => $res->order_status,
 				'order_status_slug' => $res->order_status,
-				'reason'            => __( 'Pathao Order created & it\'s pending.', 'sdevs_pathao' ),
+				'reason'            => 'Pathao Order created & it\'s pending.',
 				'updated_at'        => current_time( 'mysql' ),
 			)
 		);
@@ -111,23 +169,12 @@ class Order {
 		wp_enqueue_script( 'pathao_toast_script' );
 		wp_enqueue_script( 'pathao_admin_script' );
 
-		$cities = sdevs_get_pathao_data( 'aladdin/api/v1/countries/1/city-list' );
-		$cities = $cities && 'success' === $cities->type ? $cities->data->data : array();
-
 		$amount = is_sdevs_pathao_pro_activated() && $order->has_status( substr( sdevs_pathao_settings( 'paid_order_status', 'wc-paid' ), 3 ) ) ? 0 : $order->get_total();
 
-		$total_weight     = 0;
-		$item_description = array();
-		foreach ( $order->get_items() as $order_item ) {
-			$product = $order_item->get_product();
-			if ( ! $product->is_virtual() ) {
-				array_push( $item_description, "{$order_item->get_name()}(x{$order_item->get_quantity()})" );
-				$total_weight += empty( $product->get_weight() ) ? 0 : intval( $product->get_weight() ) * $order_item['quantity'];
-			}
-		}
-		$total_weight     = floatval( max( $total_weight, 0.5 ) );
+		$all_totals       = sdevs_pathao_get_totals_from_items( $order );
+		$total_weight     = $all_totals->weight;
+		$item_description = $all_totals->item_description;
 		$status           = $order->get_meta( '_pathao_order_status' );
-		$item_description = implode( ', ', $item_description );
 
 		include 'views/pathao-shipping.php';
 	}

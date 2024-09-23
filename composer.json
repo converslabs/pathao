@@ -24,6 +24,9 @@
     "wp-coding-standards/wpcs": "dev-develop",
     "phpcompatibility/phpcompatibility-wp": "dev-master"
   },
+  "scripts": {
+    "phpcs": "phpcs -p . --standard=PHPCompatibilityWP --ignore=vendor/*"
+  },
   "config": {
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true

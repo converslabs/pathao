@@ -7,7 +7,6 @@ namespace SpringDevs\Pathao\Admin;
  */
 class Settings {
 
-
 	/**
 	 * Initialize the class.
 	 */
@@ -26,7 +25,7 @@ class Settings {
 	 *
 	 * @return array
 	 */
-	public function update_settings_on_free( $settings ) {
+	public function update_settings_on_free( array $settings ): array {
 		if ( ! is_sdevs_pathao_pro_activated() ) {
 			$option = get_option( 'woocommerce_pathao_settings' );
 			if ( $option ) {

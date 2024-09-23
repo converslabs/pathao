@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Frontend handler class
  *

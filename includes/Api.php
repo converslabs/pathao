@@ -13,7 +13,7 @@ use WP_REST_Request;
 /**
  * API Class
  */
-class API {
+class Api {
 
 
 	/**

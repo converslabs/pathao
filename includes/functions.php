@@ -10,20 +10,6 @@
 use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
 
 /**
- * Get filename extension.
- *
- * @param string $file_name File name.
- *
- * @return false|string
- * @since 1.0.0
- */
-function sdevs_get_pathao_get_extension( $file_name ) {
-	$n = strrpos( $file_name, '.' );
-
-	return ( false === $n ) ? '' : substr( $file_name, $n + 1 );
-}
-
-/**
  * Get pathao base URL.
  *
  * @return string
@@ -135,7 +121,7 @@ function is_sdevs_pathao_pro_activated(): bool {
 function is_pathao_shipping_enabled(): bool {
 	$settings = get_option( 'woocommerce_pathao_settings' );
 
-	return $settings && isset( $settings['enabled'] ) && 'yes' === $settings['enabled'];
+	return $settings && isset( $settings['enabled'] ) && 'yes_with_pathao' === $settings['enabled'];
 }
 
 /**
@@ -163,6 +149,35 @@ function sdevs_pathao_settings( string $key, $default_value = false ) {
 	$settings = get_option( 'woocommerce_pathao_settings' );
 
 	return $settings && is_array( $settings ) && isset( $settings[ $key ] ) ? $settings[ $key ] : $default_value;
+}
+
+/**
+ * Get total weight, quantity, description from order.
+ *
+ * @param \WC_Order $order Order Object.
+ *
+ * @return object
+ */
+function sdevs_pathao_get_totals_from_items( \WC_Order $order ) {
+	$total_weight     = 0;
+	$quantity         = 0;
+	$item_description = array();
+	foreach ( $order->get_items() as $order_item ) {
+		$product = $order_item->get_product();
+		if ( ! $product->is_virtual() ) {
+			array_push( $item_description, "{$order_item->get_name()}(x{$order_item->get_quantity()})" );
+			$quantity     += $order_item['quantity'];
+			$total_weight += empty( $product->get_weight() ) ? 0 : intval( $product->get_weight() ) * $order_item['quantity'];
+		}
+	}
+	$total_weight     = floatval( max( $total_weight, 0.5 ) );
+	$item_description = implode( ', ', $item_description );
+
+	return (object) array(
+		'weight'           => 0 === $total_weight ? apply_filters( 'sdevs_pathao_default_weight', 0.5 ) : $total_weight,
+		'item_description' => $item_description,
+		'quantity'         => $quantity,
+	);
 }
 
 /**

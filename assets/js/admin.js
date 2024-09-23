@@ -1,6 +1,11 @@
 jQuery(document).ready(function ($) {
 	const nonce = $('#pathao_send_order_nonce').val();
 
+	$('#pathao_city').selectWoo();
+	$('#pathao_zone').selectWoo();
+	$('#pathao_area').selectWoo();
+	getCities();
+
 	$('#pathao-setup').on('submit', async function (e) {
 		e.preventDefault();
 
@@ -34,13 +39,13 @@ jQuery(document).ready(function ($) {
 							});
 						});
 					});
-					$('#pathao_access_token').val(res.data.access_token);
-					$('#pathao_refresh_token').val(res.data.refresh_token);
+					$('#pathao_access_token').val(res.access_token);
+					$('#pathao_refresh_token').val(res.refresh_token);
 					window.location.reload();
 				} else {
 					$('.pathao-notice').after(
 						'<div class="notice notice-error is-dismissible"><p><b>' +
-							res.data.message +
+							res.messages[0] +
 							'</b></p><button id="dismiss-message" class="notice-dismiss" type="button"><span class="screen-reader-text">Dismiss this notice.</span></button></div>'
 					);
 					$('#dismiss-message').click(function (event) {
@@ -75,7 +80,7 @@ jQuery(document).ready(function ($) {
 	$('#pathao_zone').on('change', function () {
 		const zone = $(this).val();
 
-		if (zone == '') {
+		if (!zone || '' == zone) {
 			$('#pathao_area_select').hide();
 			return false;
 		}
@@ -100,11 +105,11 @@ jQuery(document).ready(function ($) {
 				$.each(res.areas, function (key, value) {
 					$('#pathao_area').append(
 						'<option value="' +
-							value.area_id +
+							value.id +
 							'"' +
-							`${value.area_id == res.value ? ' selected' : ''}` +
+							`${value.id == res.value ? ' selected' : ''}` +
 							'>' +
-							value.area_name +
+							value.name +
 							'</option>'
 					);
 				});
@@ -172,17 +177,7 @@ jQuery(document).ready(function ($) {
 			return false;
 		}
 
-		if (city == '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select city',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
-
-		if (zone == '') {
+		if (city != '' && zone == '') {
 			$.toast({
 				position: 'bottom-center',
 				text: 'Please select zone',
@@ -269,18 +264,10 @@ jQuery(document).ready(function ($) {
 					$('#pathao_submit_shipping').prop('disabled', false);
 					$('.pathao-shipping-spinner').removeClass('is-active');
 					const errors = res.errors;
-					if (!errors && res.message) {
-						$.toast({
-							position: 'bottom-center',
-							text: res.message,
-							icon: 'error',
-							hideAfter: 6000,
-						});
-					}
 					$.each(errors, function (key, value) {
 						$.toast({
 							position: 'bottom-center',
-							text: value[0],
+							text: value,
 							icon: 'error',
 							hideAfter: 6000,
 						});
@@ -317,15 +304,17 @@ jQuery(document).ready(function ($) {
 				order_id: pathao_admin_obj.order_id,
 			},
 			success: function (res) {
-				$('#pathao_zone').html('');
+				$('#pathao_zone').html(
+					'<option value="">No Zone Selected</option>'
+				);
 				$.each(res.zones, function (key, value) {
 					$('#pathao_zone').append(
 						'<option value="' +
-							value.zone_id +
+							value.id +
 							'"' +
-							`${value.zone_id == res.value ? ' selected' : ''}` +
+							`${value.id == res.value ? ' selected' : ''}` +
 							'>' +
-							value.zone_name +
+							value.name +
 							'</option>'
 					);
 				});
@@ -336,6 +325,44 @@ jQuery(document).ready(function ($) {
 				$('#pathao_zone')
 					.val(res.value ?? res.zones[0].zone_id)
 					.change();
+			},
+			error: function (error) {
+				console.log(error);
+			},
+		});
+	}
+
+	function getCities() {
+		$('#pathao_submit_shipping').prop('disabled', true);
+		$('.pathao-shipping-spinner').addClass('is-active');
+
+		$.ajax({
+			type: 'post',
+			dataType: 'json',
+			url: pathao_admin_obj.ajax_url,
+			data: {
+				action: 'get_cities',
+				nonce,
+				order_id: pathao_admin_obj.order_id,
+			},
+			success: function (res) {
+				$('#pathao_city').html(
+					'<option value="">No City Selected</option>'
+				);
+				$.each(res.cities, function (key, value) {
+					$('#pathao_city').append(
+						'<option value="' +
+							value.id +
+							'"' +
+							`${value.id == res.value ? ' selected' : ''}` +
+							'>' +
+							value.name +
+							'</option>'
+					);
+				});
+
+				$('#pathao_submit_shipping').prop('disabled', false);
+				$('.pathao-shipping-spinner').removeClass('is-active');
 			},
 			error: function (error) {
 				console.log(error);

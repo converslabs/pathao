@@ -1,4 +1,7 @@
 <?php
+
+use SpringDevs\Pathao\Facades\PathaoAPI;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -29,7 +32,7 @@ function sdevs_pathao_shipping_method_init() {
 				$this->enabled = is_sdevs_pathao_pro_activated() && in_array(
 					$this->get_option( 'enabled' ),
 					array(
-						'yes',
+						'yes_with_pathao',
 						'yes_as_popup',
 					),
 					true
@@ -63,11 +66,11 @@ function sdevs_pathao_shipping_method_init() {
 			 * Settings fields initialization.
 			 */
 			public function init_form_fields() {
-				$stores          = sdevs_get_pathao_data( 'aladdin/api/v1/stores' );
-				$stores          = $stores && 'success' === $stores->type ? $stores->data->data : array();
+				$stores          = PathaoAPI::get_stores();
+				$stores          = $stores->success ? $stores->data : array();
 				$dropdown_stores = array();
 				foreach ( $stores as $store ) {
-					$dropdown_stores[ $store->store_id ] = $store->store_name;
+					$dropdown_stores[ $store->id ] = $store->name;
 				}
 
 				$order_statuses    = array();
@@ -79,7 +82,6 @@ function sdevs_pathao_shipping_method_init() {
 					$this->update_option( 'enabled', 'yes' );
 					$this->update_option( 'title', 'Pathao' );
 					$this->update_option( 'store', array_key_first( $dropdown_stores ) );
-					$this->update_option( 'replace_checkout_fields', 'yes' );
 					$this->update_option( 'area_field', 'display_required' );
 					$this->update_option( 'delivery_type', 48 );
 					$this->update_option( 'default_weight', 0.5 );
@@ -100,10 +102,11 @@ function sdevs_pathao_shipping_method_init() {
 						'type'        => 'select',
 						'description' => __( 'Enable this shipping.', 'sdevs_pathao' ),
 						'options'     => array(
-							'yes'            => 'Enable',
-							'yes_as_carrier' => 'Enable as Carrier',
-							'yes_as_popup'   => 'Enable as Popup Checkout',
-							'no'             => 'Disable',
+							'yes'             => 'Enable',
+							'yes_with_pathao' => 'Enable with Pathao Fields',
+							'yes_as_carrier'  => 'Enable as Carrier',
+							'yes_as_popup'    => 'Enable as Popup Checkout',
+							'no'              => 'Disable',
 						),
 						'default'     => is_sdevs_pathao_pro_activated() ? 'yes' : 'no',
 						'disabled'    => ! is_sdevs_pathao_pro_activated(),
@@ -222,7 +225,7 @@ function sdevs_pathao_shipping_method_init() {
 			 *
 			 * @access public
 			 *
-			 * @param Array $package Package.
+			 * @param array $package Package.
 			 *
 			 * @return void
 			 */
