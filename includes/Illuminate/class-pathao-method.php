@@ -32,7 +32,7 @@ function sdevs_pathao_shipping_method_init() {
 				$this->enabled = is_sdevs_pathao_pro_activated() && in_array(
 					$this->get_option( 'enabled' ),
 					array(
-						'yes_with_pathao',
+						'yes',
 						'yes_as_popup',
 					),
 					true
@@ -102,11 +102,10 @@ function sdevs_pathao_shipping_method_init() {
 						'type'        => 'select',
 						'description' => __( 'Enable this shipping.', 'sdevs_pathao' ),
 						'options'     => array(
-							'yes'             => 'Enable',
-							'yes_with_pathao' => 'Enable with Pathao Fields',
-							'yes_as_carrier'  => 'Enable as Carrier',
-							'yes_as_popup'    => 'Enable as Popup Checkout',
-							'no'              => 'Disable',
+							'yes'            => 'Enable',
+							'yes_as_carrier' => 'Enable as Carrier',
+							'yes_as_popup'   => 'Enable as Popup Checkout',
+							'no'             => 'Disable',
 						),
 						'default'     => is_sdevs_pathao_pro_activated() ? 'yes' : 'no',
 						'disabled'    => ! is_sdevs_pathao_pro_activated(),

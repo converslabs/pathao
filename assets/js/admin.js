@@ -45,8 +45,8 @@ jQuery(document).ready(function ($) {
 				} else {
 					$('.pathao-notice').after(
 						'<div class="notice notice-error is-dismissible"><p><b>' +
-							res.messages[0] +
-							'</b></p><button id="dismiss-message" class="notice-dismiss" type="button"><span class="screen-reader-text">Dismiss this notice.</span></button></div>'
+						res.messages[0] +
+						'</b></p><button id="dismiss-message" class="notice-dismiss" type="button"><span class="screen-reader-text">Dismiss this notice.</span></button></div>'
 					);
 					$('#dismiss-message').click(function (event) {
 						event.preventDefault();
@@ -105,12 +105,12 @@ jQuery(document).ready(function ($) {
 				$.each(res.areas, function (key, value) {
 					$('#pathao_area').append(
 						'<option value="' +
-							value.id +
-							'"' +
-							`${value.id == res.value ? ' selected' : ''}` +
-							'>' +
-							value.name +
-							'</option>'
+						value.id +
+						'"' +
+						`${value.id == res.value ? ' selected' : ''}` +
+						'>' +
+						value.name +
+						'</option>'
 					);
 				});
 
@@ -310,12 +310,12 @@ jQuery(document).ready(function ($) {
 				$.each(res.zones, function (key, value) {
 					$('#pathao_zone').append(
 						'<option value="' +
-							value.id +
-							'"' +
-							`${value.id == res.value ? ' selected' : ''}` +
-							'>' +
-							value.name +
-							'</option>'
+						value.id +
+						'"' +
+						`${value.id == res.value ? ' selected' : ''}` +
+						'>' +
+						value.name +
+						'</option>'
 					);
 				});
 
@@ -352,14 +352,17 @@ jQuery(document).ready(function ($) {
 				$.each(res.cities, function (key, value) {
 					$('#pathao_city').append(
 						'<option value="' +
-							value.id +
-							'"' +
-							`${value.id == res.value ? ' selected' : ''}` +
-							'>' +
-							value.name +
-							'</option>'
+						value.id +
+						'"' +
+						`${value.id == res.value ? ' selected' : ''}` +
+						'>' +
+						value.name +
+						'</option>'
 					);
 				});
+				if (res.value) {
+					getZones(res.value);
+				}
 
 				$('#pathao_submit_shipping').prop('disabled', false);
 				$('.pathao-shipping-spinner').removeClass('is-active');

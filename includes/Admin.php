@@ -8,6 +8,7 @@
 namespace SpringDevs\Pathao;
 
 use SpringDevs\Pathao\Admin\Links;
+use SpringDevs\Pathao\Admin\Notice;
 use SpringDevs\Pathao\Admin\Settings;
 
 /**
@@ -23,6 +24,7 @@ class Admin {
 	 * @since 1.0.0
 	 */
 	public function __construct() {
+		new Notice();
 		new Links();
 		new Illuminate();
 		new Settings();

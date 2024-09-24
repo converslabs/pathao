@@ -80,6 +80,11 @@ Sometimes, especially when new versions are released, it might only require some
 
 == Changelog ==
 
+= 1.1 =
+* **Update:** City and Zone fields are totally optional now.
+* **Update:** Optimize perfromence.
+* **Update:** Rebuild the API part.
+
 = 1.0.9 = 
 * **Update:** Autofill item description field.
 

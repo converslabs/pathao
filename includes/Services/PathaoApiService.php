@@ -329,6 +329,43 @@ class PathaoApiService {
 	}
 
 	/**
+	 * Price calulation.
+	 *
+	 * @param array $args Arguments.
+	 *
+	 * @return \stdClass
+	 */
+	public function price_calculation( $args ) {
+		$body = wp_parse_args(
+			$args,
+			array(
+				'store_id'      => sdevs_pathao_store_id(),
+				'item_type'     => 2,
+				'delivery_type' => apply_filters( 'sdevs_pathao_default_delivery_type', 48 ),
+			)
+		);
+
+		$res = $this->request( 'wp_remote_post', 'aladdin/api/v1/merchant/price-plan', array( 'body' => $body ) );
+
+		$has_errors = $this->has_errors( $res );
+		if ( $has_errors ) {
+			return $has_errors;
+		}
+
+		$encoded_data = wp_remote_retrieve_body( $res );
+		$decoded_data = json_decode( $encoded_data );
+
+		$data          = new \stdClass();
+		$data->success = true;
+		$data->data    = (object) array(
+			'price'       => $decoded_data->data->price,
+			'cod_enabled' => $decoded_data->data->cod_enabled,
+		);
+
+		return $data;
+	}
+
+	/**
 	 * Generate Token from pathao server.
 	 *
 	 * @param array $args Args.
@@ -354,6 +391,49 @@ class PathaoApiService {
 		$res_data = json_decode( $body );
 
 		$data          = new \stdClass();
+		$data->success = true;
+		$data->data    = (object) array(
+			'access_token'  => $res_data->access_token,
+			'refresh_token' => $res_data->refresh_token,
+		);
+
+		return $data;
+	}
+
+	/**
+	 * Refresh tokens.
+	 *
+	 * @return \stdClass
+	 */
+	public function refresh_tokens() {
+		$client_id     = get_option( 'pathao_client_id' );
+		$client_secret = get_option( 'pathao_client_secret' );
+		$refresh_token = get_option( 'pathao_refresh_token' );
+
+		$data = new stdClass();
+		if ( ! $client_id || ! $client_secret || ! $refresh_token ) {
+			$data->success  = false;
+			$data->messages = array( __( 'Please generate tokens at first!', 'sdevs_pathao' ) );
+			return;
+		}
+
+		$body = array(
+			'client_id'     => $client_id,
+			'client_secret' => $client_secret,
+			'refresh_token' => $refresh_token,
+			'grant_type'    => 'refresh_token',
+		);
+
+		$res = $this->request( 'wp_remote_post', 'aladdin/api/v1/issue-token', array( 'body' => $body ) );
+
+		$has_errors = $this->has_errors( $res );
+		if ( $has_errors ) {
+			return $has_errors;
+		}
+
+		$body     = wp_remote_retrieve_body( $res );
+		$res_data = json_decode( $body );
+
 		$data->success = true;
 		$data->data    = (object) array(
 			'access_token'  => $res_data->access_token,
