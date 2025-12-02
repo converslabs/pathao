@@ -58,7 +58,7 @@ class PathaoApiService {
 	 *
 	 * @return false|\stdClass
 	 */
-	private function has_errors( $res ): false|\stdClass {
+	private function has_errors( $res ) {
 		$res_code = wp_remote_retrieve_response_code( $res );
 		$data     = new \stdClass();
 		if ( 401 === $res_code ) {
@@ -99,7 +99,7 @@ class PathaoApiService {
 	 *
 	 * @return false|\stdClass
 	 */
-	private function has_transient( $key ): false|\stdClass {
+	private function has_transient( $key ) {
 		$has_transient = get_transient( $key );
 
 		if ( $has_transient ) {

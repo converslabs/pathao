@@ -3,8 +3,8 @@ Contributors: springdevs, naminbd, ok9xnirab
 Donate link: http://springdevs.com/
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
-Tested up to: 6.6
-Stable tag: trunk
+Tested up to: 6.8
+Stable tag: 1.2
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html

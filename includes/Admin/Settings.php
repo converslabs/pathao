@@ -83,6 +83,7 @@ class Settings {
 			)
 		);
 		wp_enqueue_style( 'pathao_toast_styles' );
+		wp_enqueue_style( 'pathao_styles' );
 		wp_enqueue_script( 'pathao_toast_script' );
 		wp_enqueue_script( 'pathao_admin_script' );
 	}

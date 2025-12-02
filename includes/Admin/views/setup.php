@@ -1,6 +1,6 @@
 <?php if ( ! defined( 'ABSPATH' ) ) {
 	exit;} ?>
-<div>
+<div class="pathao-notice-main ">
 	<?php settings_errors(); ?>
 	<h2><?php esc_html_e( 'Pathao Setup', 'sdevs_pathao' ); ?></h2>
 	<div class="pathao-notice"></div>

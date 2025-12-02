@@ -177,5 +177,6 @@ class Order {
 		$status           = $order->get_meta( '_pathao_order_status' );
 
 		include 'views/pathao-shipping.php';
+		wp_nonce_field( 'pathao_order_action', '_pathao_order_nonce' );
 	}
 }
