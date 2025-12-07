@@ -25,10 +25,10 @@ class Links {
 	 */
 	public function plugin_action_links( $links ) {
 		$extra_links             = array();
-		$extra_links['settings'] = '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=pathao' ) . '" aria-label="' . esc_attr__( 'View Shipping settings', 'sdevs_pathao' ) . '">' . esc_html__( 'Settings', 'sdevs_pathao' ) . '</a>';
+		$extra_links['settings'] = '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=pathao' ) . '" aria-label="' . esc_attr__( 'View Shipping settings', 'integration-of-pathao-for-woocommerce' ) . '">' . esc_html__( 'Settings', 'integration-of-pathao-for-woocommerce' ) . '</a>';
 
 		if ( ! is_sdevs_pathao_pro_activated() ) {
-			$extra_links['premium'] = '<a href="https://springdevs.com/plugin/pathao" target="_blank" style="color:#3db634;">' . __( 'Upgrade to premium', 'sdevs_pathao' ) . '</a>';
+			$extra_links['premium'] = '<a href="https://springdevs.com/plugin/pathao" target="_blank" style="color:#3db634;">' . __( 'Upgrade to premium', 'integration-of-pathao-for-woocommerce' ) . '</a>';
 		}
 		$extra_links['deactivate'] = $links['deactivate'];
 		unset( $links['deactivate'] );
@@ -49,9 +49,9 @@ class Links {
 		}
 
 		$row_meta = array(
-			'docs'    => '<a href="https://springdevs.com/docs/pathao" target="_blank">' . __( 'Docs', 'sdevs_pathao' ) . '</a>',
-			'support' => '<a href="https://wordpress.org/support/plugin/integration-of-pathao-for-woocommerce" target="_blank">' . __( 'Support', 'sdevs_pathao' ) . '</a>',
-			'review'  => '<a href="https://wordpress.org/support/plugin/integration-of-pathao-for-woocommerce/reviews/?rate=5#new-post" target="_blank">' . __( 'Review', 'sdevs_pathao' ) . '</a>',
+			'docs'    => '<a href="https://springdevs.com/docs/pathao" target="_blank">' . __( 'Docs', 'integration-of-pathao-for-woocommerce' ) . '</a>',
+			'support' => '<a href="https://wordpress.org/support/plugin/integration-of-pathao-for-woocommerce" target="_blank">' . __( 'Support', 'integration-of-pathao-for-woocommerce' ) . '</a>',
+			'review'  => '<a href="https://wordpress.org/support/plugin/integration-of-pathao-for-woocommerce/reviews/?rate=5#new-post" target="_blank">' . __( 'Review', 'integration-of-pathao-for-woocommerce' ) . '</a>',
 		);
 
 		return array_merge( $links, $row_meta );

@@ -63,6 +63,34 @@ class Ajax {
 			'password'      => sanitize_text_field( wp_unslash( $_POST['client_password'] ) ),
 		);
 
+		// Log submitted form data for debugging. Mask sensitive values.
+		$submitted_password = $data['password'];
+		$masked_password = '';
+		if ( null !== $submitted_password ) {
+			$len = strlen( $submitted_password );
+			if ( $len <= 2 ) {
+				$masked_password = str_repeat( '*', $len );
+			} else {
+				$masked_password = substr( $submitted_password, 0, 1 ) . str_repeat( '*', $len - 2 ) . substr( $submitted_password, -1 );
+			}
+		}
+
+		$masked_secret = $client_secret;
+		if ( $masked_secret && strlen( $masked_secret ) > 4 ) {
+			$masked_secret = str_repeat( '*', strlen( $masked_secret ) - 4 ) . substr( $masked_secret, -4 );
+		}
+
+		$raw_sandbox = isset( $_POST['sandbox_mode'] ) ? (bool) sanitize_text_field( wp_unslash( $_POST['sandbox_mode'] ) ) : false;
+
+
+		// error_log( 'Pathao json setup form submitted: ' . wp_json_encode( array(
+		// 	'client_id' => $client_id,
+		// 	'client_secret_masked' => $masked_secret,
+		// 	'username' => $data['username'],
+		// 	'password_masked' => $masked_password,
+		// 	'sandbox_mode_raw' => $raw_sandbox,
+		// ) ) );
+
 		update_option( 'pathao_sandbox_mode', 'true' === $_POST['sandbox_mode'] ? true : false );
 
 		$res = PathaoAPI::generate_tokens( $data );
@@ -143,7 +171,7 @@ class Ajax {
 			wp_send_json(
 				array(
 					'success' => false,
-					'errors'  => array( __( 'Invalid nonce', 'sdevs_pathao' ) ),
+					'errors'  => array( __( 'Invalid nonce', 'integration-of-pathao-for-woocommerce' ) ),
 				)
 			);
 		}

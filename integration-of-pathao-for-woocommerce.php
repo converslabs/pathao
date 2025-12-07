@@ -3,20 +3,21 @@
  * Plugin Name: Pathao Integration for WooCommerce
  * Plugin URI: https://springdevs.com/plugin/pathao
  * Description: Pathao integration for WooCommerce
- * Version: 1.1
- * Author: SpringDevs
+ * Version: 1.2
+ * Contributors: converswp, shamsbd71
+ * Author: ConversWP
  * Author URI: https://springdevs.com
- * Requires Plugins: woocommerce
+ * Requires Plugins: woocommerce 
  * License: GPLv2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: sdevs_pathao
+ * Text Domain: integration-of-pathao-for-woocommerce
  * Domain Path: /languages
  *
  * @package Pathao
  */
 
 /**
- * Copyright (c) 2022 SpringDevs (email: contact@springdevs.com). All rights reserved.
+ * Copyright (c) 2022 ConversWP (email: contact@springdevs.com). All rights reserved.
  *
  * Released under the GPL license
  * http://www.opensource.org/licenses/gpl-license.php
@@ -62,7 +63,7 @@ final class Sdevs_pathao {
 	 *
 	 * @since 1.0.0
 	 */
-	const VERSION = '1.1.0';
+	const VERSION = '1.2.0';
 
 	/**
 	 * Holds various class instances.
@@ -225,6 +226,7 @@ final class Sdevs_pathao {
 
 		// Localize our plugin.
 		add_action( 'init', array( $this, 'localization_setup' ) );
+		
 	}
 
 	/**
@@ -253,7 +255,11 @@ final class Sdevs_pathao {
 	 * @return void
 	 */
 	public function localization_setup() {
-		load_plugin_textdomain( 'sdevs_pathao', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+		load_plugin_textdomain(
+			'integration-of-pathao-for-woocommerce',
+			false,
+			dirname( plugin_basename( __FILE__ ) ) . '/languages/'
+		);
 	}
 
 	/**

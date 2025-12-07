@@ -115,6 +115,9 @@ class Assets {
 			'pathao_toast_styles' => array(
 				'src' => $plugin_css_assets_path . 'jquery.toast.min.css',
 			),
+			'pathao_styles' => array(
+				'src' => $plugin_css_assets_path . 'style.css',
+			),
 		);
 
 		return $styles;

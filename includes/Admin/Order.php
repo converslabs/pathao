@@ -38,7 +38,7 @@ class Order {
 	 * @return array
 	 */
 	public function add_custom_columns( $columns ) {
-		$columns['sdevs_pathao_order_column'] = __( 'Pathao', 'sdevs_pathao' );
+		$columns['sdevs_pathao_order_column'] = __( 'Pathao', 'integration-of-pathao-for-woocommerce' );
 		return $columns;
 	}
 
@@ -80,20 +80,29 @@ class Order {
 	 *
 	 * @param mixed $res Response.
 	 */
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 	public function store_log_after_creation( $res ) {
 		global $wpdb;
 		$log_table = $wpdb->prefix . 'pathao_logs';
-		$wpdb->insert(
-			$log_table,
-			array(
-				'order_id'          => (int) $res->merchant_order_id,
-				'consignment_id'    => $res->consignment_id,
-				'order_status'      => $res->order_status,
-				'order_status_slug' => $res->order_status,
-				'reason'            => 'Pathao Order created & it\'s pending.',
-				'updated_at'        => current_time( 'mysql' ),
-			)
-		);
+			$wpdb->insert(
+					$log_table,
+					array(
+						'order_id'          => (int) $res->merchant_order_id,
+						'consignment_id'    => sanitize_text_field( $res->consignment_id ),
+						'order_status'      => sanitize_text_field( $res->order_status ),
+						'order_status_slug' => sanitize_text_field( $res->order_status ),
+						'reason'            => 'Pathao Order created & it\'s pending.',
+						'updated_at'        => current_time( 'mysql' ),
+					),
+					array(
+						'%d',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+					)
+        	);
 	}
 
 	/**
@@ -108,7 +117,7 @@ class Order {
 		if (  isset( $_GET['action'] ) && 'edit' === $_GET['action']) {
 			add_meta_box(
 				'pathao_order_wc',
-				__( 'Pathao Shipping', 'sdevs_pathao' ),
+				__( 'Pathao Shipping', 'integration-of-pathao-for-woocommerce' ),
 				array( $this, 'pathao_shipping' ),
 				$screen,
 				'side',
@@ -121,7 +130,21 @@ class Order {
 	 * Display order shipping form and details.
 	 */
 	public function pathao_shipping() {
-		$order = wc_get_order( sdevs_wc_order_hpos_enabled() ? esc_html( $_GET['id'] ) : get_the_ID() );
+		 
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'pathao_shipping_nonce' ) ) {
+			wp_die( esc_html__( 'Security check failed.', 'integration-of-pathao-for-woocommerce' ) );
+		}
+
+		$order_id = null;
+
+		if ( isset( $_GET['id'] ) ) {
+			$order_id = absint( wp_unslash( $_GET['id'] ) ); 
+		} else {
+			$order_id = get_the_ID();
+		}
+
+       $order = wc_get_order( sdevs_wc_order_hpos_enabled() ? $order_id : get_the_ID() );
+	
 		if ( ! $order ) {
 			return;
 		}
@@ -177,5 +200,6 @@ class Order {
 		$status           = $order->get_meta( '_pathao_order_status' );
 
 		include 'views/pathao-shipping.php';
+		wp_nonce_field( 'pathao_order_action', '_pathao_order_nonce' );
 	}
 }
