@@ -74,7 +74,7 @@ final class Sdevs_pathao {
 	 */
 	private $container = array();
 
-	/**
+	/** 
 	 * Constructor for the Sdevs_pathao class.
 	 *
 	 * Sets up all the appropriate hooks and actions
@@ -82,6 +82,7 @@ final class Sdevs_pathao {
 	 *
 	 * @since 1.0.0
 	 */
+
 	private function __construct() {
 		$this->define_constants();
 
@@ -204,11 +205,9 @@ final class Sdevs_pathao {
 		if ( $this->is_request( 'admin' ) ) {
 			$this->container['admin'] = new SpringDevs\Pathao\Admin();
 		}
-
 		if ( $this->is_request( 'frontend' ) ) {
 			$this->container['frontend'] = new SpringDevs\Pathao\Frontend();
 		}
-
 		if ( $this->is_request( 'ajax' ) ) {
 			// require_once SDEVS_PATHAO_INCLUDES . '/class-ajax.php';
 		}
