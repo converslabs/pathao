@@ -163,11 +163,14 @@ class Ajax {
 	 * Send order to Pathao.
 	 */
 	public function send_order_to_pathao() {
+		error_log('[Pathao Debug] AJAX send_order_to_pathao triggered');
 		if ( ! isset( $_POST['nonce'], $_POST['order_id'], $_POST['item_type'], $_POST['delivery_type'], $_POST['amount'], $_POST['item_weight'] ) ) {
+			error_log('[Pathao Debug] Missing required POST fields');
 			return;
 		}
 
 		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'pathao_send_order' ) ) {
+			error_log('[Pathao Debug] Invalid nonce');
 			wp_send_json(
 				array(
 					'success' => false,
@@ -211,7 +214,9 @@ class Ajax {
 			$body['amount_to_collect'] = sanitize_text_field( wp_unslash( $_POST['amount'] ) );
 		}
 
+		error_log('[Pathao Debug] Calling PathaoAPI::send_order with order_id: ' . $order_id . ' and body: ' . print_r($body, true));
 		$res_data = PathaoAPI::send_order( $order_id, $body );
+		error_log('[Pathao Debug] PathaoAPI::send_order result: ' . print_r($res_data, true));
 
 		if ( ! $res_data->success ) {
 			wp_send_json(

@@ -41,14 +41,11 @@ class PathaoApiService
 	 */
 	private function request(callable $func, string $path, $args = array())
 	{
-		// error_log('Making request to Pathao API: ' . json_encode(array_merge(
-		// 	array(
-		// 		'headers' => array(
-		// 			'Content-Type'        => 'application/json',
-		// 		),
-		// 	),
-		// 	$args
-		// )));
+		error_log('[Pathao Debug] Attempting API call to: ' . $this->get_base_url() . $path);
+		error_log('[Pathao Debug] Request args: ' . var_dump($args));
+		$token = $this->get_access_token();
+		error_log('[Pathao Debug] Access token present: ' . ($token ? 'Yes' : 'No'));
+
 		return $func(
 			$this->get_base_url() . $path,
 			array_merge(
@@ -325,6 +322,8 @@ class PathaoApiService
 		);
 
 		$res = $this->request('wp_remote_post', 'aladdin/api/v1/orders', array('body' => $body));
+// error_log("hello res:",print_r($res, true));
+
 
 		$has_errors = $this->has_errors($res);
 		if ($has_errors) {
@@ -392,24 +391,24 @@ class PathaoApiService
 	 * @return \stdClass
 	 */
 public function generate_tokens( $args ) {
-//    error_log("Generating tokens with args: " . print_r( $args, true ));
+   error_log('[Pathao Debug] generate_tokens called with args: ' . print_r( $args, true ));
 
-    $body = wp_parse_args(
-        $args,
-        array(
-            'grant_type' => 'password',
-        )
-    );
+     $body = wp_parse_args(
+         $args,
+         array(
+             'grant_type' => 'password',
+         )
+     );
 
-    // JSON encode the body
-    $json_body = json_encode( $body );
+     // JSON encode the body
+     $json_body = json_encode( $body );
 
-    // Make the request
-    // $res = $this->request(
-    //     'wp_remote_post',
-    //     'aladdin/api/v1/issue-token',
-    //     array( 'body' => $json_body )
-    // );
+     // Make the request
+     // $res = $this->request(
+     //     'wp_remote_post',
+     //     'aladdin/api/v1/issue-token',
+     //     array( 'body' => $json_body )
+     // );
 
 	$res = $this->request(
 		'wp_remote_post',
@@ -417,28 +416,28 @@ public function generate_tokens( $args ) {
 		array(
 			'body' => json_encode( $body ), // encode array to JSON
 		)
-   );
-
-
-    // error_log("wp_remote_post Response: " . print_r( $res, true ));
-
-    $has_errors = $this->has_errors( $res );
-    if ( $has_errors ) {
-        return $has_errors;
-    }
-
-    $body     = wp_remote_retrieve_body( $res );
-    $res_data = json_decode( $body );
-
-    $data          = new \stdClass();
-    $data->success = true;
-    $data->data    = (object) array(
-        'access_token'  => $res_data->access_token,
-        'refresh_token' => $res_data->refresh_token,
     );
 
-    return $data;
-}
+    error_log('[Pathao Debug] Raw response from generate_tokens API: ' . print_r( $res, true ));
+
+     $has_errors = $this->has_errors( $res );
+     if ( $has_errors ) {
+         error_log('[Pathao Debug] generate_tokens has errors: ' . print_r( $has_errors, true ));
+         return $has_errors;
+     }
+
+     $body     = wp_remote_retrieve_body( $res );
+     $res_data = json_decode( $body );
+
+     $data          = new \stdClass();
+     $data->success = true;
+     $data->data    = (object) array(
+         'access_token'  => $res_data->access_token,
+         'refresh_token' => $res_data->refresh_token,
+     );
+
+     return $data;
+ }
 
 
 	/**
