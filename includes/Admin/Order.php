@@ -132,21 +132,14 @@ class Order
 
 	public function pathao_shipping()
 	{
-		$nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
-		if (! wp_verify_nonce($nonce, 'pathao_shipping_nonce')) {
-			wp_die(esc_html__('Security check failed.', 'integration-of-pathao-for-woocommerce'));
-		}
-
 		$order_id = isset($_GET['id']) ? absint(wp_unslash($_GET['id'])) : get_the_ID();
 		$order = wc_get_order($order_id);
 		if (! $order) return;
 
 		$consignment_id = $order->get_meta('_pathao_consignment_id');
-		$status         = $order->get_meta('_pathao_order_status');
-
-		error_log("[Pathao Debug] pathao_shipping - consignment_id: $consignment_id, status: $status");
-
-		if ($consignment_id && ! in_array($status, ['Pickup_Failed', 'Pickup_Cancelled', 'Delivery_Failed'], true)) {
+		$status = $order->get_meta('_pathao_order_status');
+error_log("[Pathao Debug] pathao_shipping - order_id: $order_id, consignment_id: $consignment_id, status: $status");
+		if ($consignment_id && !in_array($status, ['Pickup_Failed', 'Pickup_Cancelled', 'Delivery_Failed'], true)) {
 			$this->display_pathao_details($order);
 		} elseif ($consignment_id) {
 			$this->display_pathao_details($order);
@@ -155,6 +148,7 @@ class Order
 			$this->pathao_shipping_form($order);
 		}
 	}
+
 
 	public function display_pathao_details(WC_Order $order)
 	{
@@ -167,30 +161,33 @@ class Order
 		include 'views/pathao-shipping-details.php';
 	}
 
-	public function pathao_shipping_form(WC_Order $order)
-	{
-		$order_id = $order->get_id();
-		wp_localize_script(
-			'pathao_admin_script',
-			'pathao_admin_obj',
-			array(
-				'ajax_url' => admin_url('admin-ajax.php'),
-				'order_id' => $order_id,
-			)
-		);
-		wp_enqueue_style('pathao_toast_styles');
-		wp_enqueue_script('pathao_toast_script');
-		wp_enqueue_script('pathao_admin_script');
+		public function pathao_shipping_form(WC_Order $order)
+		{
+			$order_id = $order->get_id();
 
-		$amount = is_sdevs_pathao_pro_activated() && $order->has_status(substr(sdevs_pathao_settings('paid_order_status', 'wc-paid'), 3)) ? 0 : $order->get_total();
-		$all_totals       = sdevs_pathao_get_totals_from_items($order);
-		$total_weight     = $all_totals->weight;
-		$item_description = $all_totals->item_description;
-		$status           = $order->get_meta('_pathao_order_status');
+			wp_localize_script(
+				'pathao_admin_script',
+				'pathao_admin_obj',
+				array(
+					'ajax_url' => admin_url('admin-ajax.php'),
+					'order_id' => $order_id,
+				)
+			);
 
-		error_log("[Pathao Debug] pathao_shipping_form - amount: $amount, weight: $total_weight, status: $status");
+			wp_enqueue_style('pathao_toast_styles');
+			wp_enqueue_script('pathao_toast_script');
+			wp_enqueue_script('pathao_admin_script');
 
-		include 'views/pathao-shipping.php';
-		wp_nonce_field('pathao_order_action', '_pathao_order_nonce');
-	}
+			$amount = is_sdevs_pathao_pro_activated() && $order->has_status(substr(sdevs_pathao_settings('paid_order_status', 'wc-paid'), 3)) ? 0 : $order->get_total();
+			$all_totals       = sdevs_pathao_get_totals_from_items($order);
+			$total_weight     = $all_totals->weight;
+			$item_description = $all_totals->item_description;
+			$status           = $order->get_meta('_pathao_order_status');
+
+			error_log("[Pathao Debug] pathao_shipping_form - amount: $amount, weight: $total_weight, status: $status");
+
+			include 'views/pathao-shipping.php';
+			wp_nonce_field('pathao_order_action', '_pathao_order_nonce');
+		}
+
 }

@@ -1,4 +1,5 @@
 jQuery(document).ready(function ($) {
+	console.log('Pathao Admin JS Loaded');
 	const nonce = $('#pathao_send_order_nonce').val();
 
 	$('#pathao_city').selectWoo();

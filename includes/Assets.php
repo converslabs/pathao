@@ -88,18 +88,24 @@ class Assets {
 		$scripts = array(
 			'pathao_toast_script' => array(
 				'src'       => $plugin_js_assets_path . 'jquery.toast.min.js',
-				'deps'      => array( 'jquery' ),
+				'deps'      => array('jquery'),
 				'in_footer' => true,
 			),
 			'pathao_admin_script' => array(
 				'src'       => $plugin_js_assets_path . 'admin.js',
-				'deps'      => array( 'jquery', 'pathao_toast_script' ),
+				'deps'      => array('jquery', 'pathao_toast_script'),
 				'in_footer' => true,
 			),
 		);
 
+		// error_log('[Pathao Debug] get_scripts called');
+		foreach ($scripts as $handle => $script) {
+			error_log("[Pathao Debug] Script: $handle, src: {$script['src']}, in_footer: " . ($script['in_footer'] ? 'true' : 'false'));
+		}
+
 		return $scripts;
 	}
+
 
 	/**
 	 * Get registered styles
