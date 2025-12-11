@@ -87,10 +87,7 @@ final class Sdevs_pathao
 	public function deactivate() {}
 
 	private function includes()
-	{
-		// Always include Ajax
-		require_once SDEVS_PATHAO_INCLUDES . '/Ajax.php';
-
+	{  
 		if ($this->is_request('admin')) {
 			$this->container['admin'] = new SpringDevs\Pathao\Admin();
 		} 

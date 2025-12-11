@@ -14,7 +14,7 @@ function sdevs_pathao_shipping_method_init() {
 		 * Pathao shipping class.
 		 */
 		class SDEVS_Pathao_Method extends WC_Shipping_Method {
-
+ 
 			/**
 			 * Constructor for your shipping class
 			 *
