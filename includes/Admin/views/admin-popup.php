@@ -3,7 +3,7 @@
 
     <div class="ptc-header">
       <h2>Send Order to Pathao</h2>
-      <img src="https://pathao.com/wp-content/uploads/2019/08/pathao-logo.png" alt="Pathao Logo">
+      <img src=" " alt="Shop Logo">
     </div>
 
     <form id="ptc-pathao-form">
@@ -88,7 +88,7 @@
         <div class="ptc-grid">
           <div class="ptc-field">
             <label>Store</label>
-            <input type="text" id="ptc-store">
+            <input type="text" id="ptc-store" name="store">
           </div>
 
           <div class="ptc-field">

@@ -249,7 +249,7 @@ class PathaoApiService
     ------------------------------------------*/
     public function get_stores(): stdClass
     {
-        $key = '_sdevs_pathao_stores';
+        $key = '_pathao_store_id';
 
         if ($c = $this->has_transient($key)) {
             error_log("[Pathao Debug] get_stores(): Using cached");
@@ -296,17 +296,15 @@ class PathaoApiService
     {
         $required = [
             'store_id',
-            'recipient_name',
-            'recipient_phone',
+            'recipient_name', 
             'recipient_address',
             'delivery_type',
             'item_type',
             'item_quantity',
             'item_weight',
             'amount_to_collect'
-        ];
+        ]; 
 
-        error_log("[Pathao Debug] VALIDATING PAYLOAD: " . json_encode($p));
 
         foreach ($required as $f) {
             if (!isset($p[$f]) || $p[$f] === '') {
@@ -343,10 +341,17 @@ class PathaoApiService
         }
 
         /* Extract Fields */
-        $store_id = get_option('sdevs_pathao_store_id');
+        $store_id = get_option('pathao_store_id');
+        error_log("[Pathao Debug] Up Store ID from option: " . print_r($store_id, true));
+        error_log("[Pathao Debug] xxUsing Store ID: {$store_id}");
         $recipient_name = trim($order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name());
         $recipient_phone = $order->get_billing_phone();
-        $recipient_address = $order->get_shipping_address_1() . ', ' . $order->get_shipping_city();
+        if (empty($recipient_phone)) {
+            $recipient_phone = "01700000000";
+        }
+
+
+        $recipient_address = $order->get_shipping_address_1() . ', ' . $order->get_shipping_city(); 
 
         $payload = [
             'store_id'          => (int)$store_id,
@@ -375,6 +380,14 @@ class PathaoApiService
 
         error_log("[Pathao Debug] PAYLOAD OK: " . json_encode($payload));
 
+
+        /* Validate */
+        $validate = $this->validate_order_payload($payload);
+        if ($validate !== true) {
+            error_log("[Pathao Debug] PAYLOAD FAILED: {$validate}");
+            return (object)['success' => false, 'messages' => [$validate]];
+        }
+
         /* Send */
         $res = $this->request(
             'wp_remote_post',
@@ -383,7 +396,7 @@ class PathaoApiService
         );
 
         if ($err = $this->has_errors($res)) {
-            error_log("[Pathao Debug] API ERR: " . print_r($err, true));
+            // error_log("[Pathao Debug] API ERR: " . print_r($err, true));
             return $err;
         }
 
@@ -400,7 +413,7 @@ class PathaoApiService
     public function price_calculation($args)
     {
         $body = wp_parse_args($args, [
-            'store_id'      => sdevs_pathao_store_id(),
+            'store_id'      => pathao_store_id(),
             'item_type'     => 2,
             'delivery_type' => 48,
         ]);

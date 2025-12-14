@@ -25,6 +25,8 @@ function is_sdevs_pathao_pro_activated(): bool {
  */
 function is_pathao_shipping_enabled(): bool {
 	$settings = get_option( 'woocommerce_pathao_settings' );
+	
+error_log("Store setting: " . print_r(get_option('woocommerce_pathao_settings'), true));
 
 	return $settings && isset( $settings['enabled'] ) && 'yes' === $settings['enabled'];
 }
@@ -32,7 +34,7 @@ function is_pathao_shipping_enabled(): bool {
 /**
  * Get current store ID.
  */
-function sdevs_pathao_store_id() {
+function pathao_store_id() {
 	$settings = get_option( 'woocommerce_pathao_settings' );
 
 	if ( $settings && isset( $settings['store'] ) ) {

@@ -152,9 +152,6 @@ jQuery(document).ready(function ($) {
 
         // collect form fields
         const formData = $("#ptc-pathao-form").serialize();
-
-        console.log("Submitting to Pathao with form:", formData);
-
         $.ajax({
             url: ajaxurl,
             method: "POST",
@@ -168,9 +165,8 @@ jQuery(document).ready(function ($) {
                 if (res.success) {
                     alert("Order successfully sent to Pathao!");
                 } else {
-                    alert("Failed: " + res.data.message);
-                }
-
+                   alert("Failed: " + JSON.stringify(res.data)); 
+                } 
                 closePathaoModal();
             },
             error: function (err) {
