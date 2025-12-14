@@ -22,6 +22,9 @@ if (! defined('ABSPATH')) {
 	exit;
 }
 
+define('SDEVS_PATHAO_DIR', plugin_dir_path(__FILE__));
+
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 /**
@@ -40,7 +43,7 @@ final class Sdevs_pathao
 		register_activation_hook(__FILE__, array($this, 'activate'));
 		register_deactivation_hook(__FILE__, array($this, 'deactivate'));
 
-		add_action('plugins_loaded', array($this, 'init_plugin'));
+		  add_action('plugins_loaded', array($this, 'init_plugin'));
 	}
 
 	public static function init()
@@ -87,7 +90,10 @@ final class Sdevs_pathao
 	public function deactivate() {}
 
 	private function includes()
-	{  
+	{
+		// Always include Ajax
+		require_once SDEVS_PATHAO_INCLUDES . '/Ajax.php';
+
 		if ($this->is_request('admin')) {
 			$this->container['admin'] = new SpringDevs\Pathao\Admin();
 		} 
@@ -133,6 +139,9 @@ final class Sdevs_pathao
 		}
 		return false;
 	}
+
+ 
+
 }
 
 // Kickoff

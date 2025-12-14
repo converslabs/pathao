@@ -4,569 +4,493 @@ namespace SpringDevs\Pathao\Services;
 
 use stdClass;
 
-/**
- * Pathao API service class.
- */
 class PathaoApiService
 {
 
-	/**
-	 * Return base url based on sandmode?.
-	 *
-	 * @return string
-	 */
-	private function get_base_url(): string
-	{
-		return get_option('pathao_sandbox_mode') ? 'https://courier-api-sandbox.pathao.com/' : 'https://api-hermes.pathao.com/';
-	}
-
-	/**
-	 * Get pathao access token from option.
-	 *
-	 * @return string
-	 */
-	private function get_access_token(): string
-	{
-		return get_option('pathao_access_token');
-	}
-
-	/**
-	 * Process request.
-	 *
-	 * @param callable $func wp_remote functions.
-	 * @param string   $path path.
-	 * @param array    $args args.
-	 *
-	 * @return array|\WP_Error
-	 */
-	private function request(callable $func, string $path, $args = array())
-	{
-		$token = $this->get_access_token();
-
-		// error_log('[Pathao Debug] Attempting API call to: ' . $this->get_base_url() . $path);
-		// error_log('[Pathao Debug] Access token present: ' . ($token ? 'Yes' : 'No'));
-		// error_log('[Pathao Debug] Request args (before merge): ' . print_r($args, true));
-
-		// Required headers for Pathao
-		$default_headers = array(
-			'Authorization' => 'Bearer ' . $token,
-			'Accept'        => 'application/json',
-			'Content-Type'  => 'application/json',
-		);
-
-		$final_args = array(
-			'headers' => $default_headers,
-		);
-
-		// Merge in user args (body etc)
-		if (!empty($args)) {
-			$final_args = array_merge($final_args, $args);
-		}
-
-		error_log('[Pathao Debug] Final request args: ' . print_r($final_args, true));
-
-		return $func(
-			$this->get_base_url() . $path,
-			$final_args
-		);
-	}
-
-
-	/**
-	 * Handle response errors.
-	 *
-	 * @param array $res Response.
-	 *
-	 * @return false|\stdClass
-	 */
-	private function has_errors($res)
-	{
-		$res_code = wp_remote_retrieve_response_code($res);
-		$data     = new \stdClass();
-		if (401 === $res_code) {
-			$data->success  = false;
-			$data->messages = array(__('Invalid access token !', 'integration-of-pathao-for-woocommerce'));
-			return $data;
-		} elseif (422 === $res_code) {
-			$res_body = wp_remote_retrieve_body($res);
-			$errors   = json_decode($res_body)->errors;
-			$messages = array();
-			array_walk_recursive(
-				get_object_vars($errors),
-				function ($msg) use (&$messages) {
-					$messages[] = $msg;
-				}
-			);
-
-			$data->success  = false;
-			$data->messages = $messages;
-			return $data;
-		} elseif (400 === $res_code) {
-			$data->success  = false;
-			$data->messages = array(__('The user credentials were incorrect.', 'integration-of-pathao-for-woocommerce'));
-			return $data;
-		} elseif (200 > $res_code || 299 < $res_code) {
-			$data->success  = false;
-			$data->messages = array(__('Something went wrong! Try again', 'integration-of-pathao-for-woocommerce'));
-			return $data;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Check if there any transient saved.
-	 *
-	 * @param string $key Transient Key.
-	 *
-	 * @return false|\stdClass
-	 */
-	private function has_transient($key)
-	{
-		$has_transient = get_transient($key);
-
-		if ($has_transient) {
-			$data          = new \stdClass();
-			$data->success = true;
-			$data->data    = $has_transient;
-			return $data;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Get cities from pathao server.
-	 *
-	 * @return \stdClass
-	 */
-	public function get_cities()
-	{
-		$transient_key = '_sdevs_pathao_cities';
-
-		// Check cache first
-		$has_transient = $this->has_transient($transient_key);
-		if ($has_transient) {
-			//error_log("[Pathao Debug] get_cities(): Using cached data");
-			return $has_transient;
-		}
-
-		//error_log("------------------------------------------------------");
-		//error_log("[Pathao Debug] get_cities() CALLED");
-
-		// URL with sandbox/base url support
-		$url = 'aladdin/api/v1/cities';
-		//error_log("[Pathao Debug] Request URL: " . $this->get_base_url() . $url);
-
-		// Make API call using existing helper
-		$res = $this->request('wp_remote_get', $url);
-
-		//error_log("[Pathao Debug] Raw response from /cities: " . print_r($res, true));
-
-		// Catch errors using existing logic
-		$has_errors = $this->has_errors($res);
-		if ($has_errors) {
-			//error_log("[Pathao Debug] /cities ERROR parsed: " . print_r($has_errors, true));
-			return $has_errors;
-		}
-
-		// Parse body
-		$body = wp_remote_retrieve_body($res);
-		//error_log("[Pathao Debug] /cities RAW BODY: " . $body);
-
-		$decoded = json_decode($body);
-		//error_log("[Pathao Debug] /cities DECODED BODY: " . print_r($decoded, true));
-
-		// Validate structure
-		if (!isset($decoded->data->data)) {
-			$error = new \stdClass();
-			$error->success = false;
-			$error->messages = ['Cities data missing or malformed'];
-
-			//error_log("[Pathao Debug] ERROR: Missing data field");
-			return $error;
-		}
-
-		// Format cities
-		$data          = new \stdClass();
-		$data->success = true;
-		$data->data    = array();
-
-		foreach ($decoded->data->data as $city) {
-			$data->data[] = (object) [
-				'id'   => $city->city_id,
-				'name' => $city->city_name,
-			];
-		}
-
-		// Cache for 12 hours
-		set_transient($transient_key, $data->data, 720 * 60);
-		return $data;
-	}
-
-	public function get_zones($city_id)
-	{
-		$url = 'https://api-hermes.pathao.com/aladdin/api/v1/zones?city_id=' . intval($city_id);
-
-		$access_token = $this->get_access_token();
-
-		if (!$access_token) {
-			//error_log("[Pathao Debug] Access token missing");
-			return array();
-		}
-
-		$args = array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $access_token,
-				'Accept'        => 'application/json',
-			),
-			'timeout' => 30
-		);
-
-		//error_log("[Pathao Debug] Final request args: " . print_r($args, true));
-
-		$response = wp_remote_get($url, $args);
-
-		//error_log("[Pathao Debug] Raw response from /zones: " . print_r($response, true));
-
-		if (is_wp_error($response)) {
-			//error_log("[Pathao Debug] ERROR: " . $response->get_error_message());
-			return array();
-		}
-
-		$body = wp_remote_retrieve_body($response);
-		//error_log("[Pathao Debug] /zones RAW BODY: " . $body);
-
-		$decoded = json_decode($body);
-		//error_log("[Pathao Debug] /zones DECODED BODY: " . print_r($decoded, true));
-
-		if (!isset($decoded->data->data)) {
-			//error_log("[Pathao Debug] ERROR: Missing data field");
-			return array();
-		}
-
-		$zones_list = array();
-		foreach ($decoded->data->data as $zone) {
-			$zones_list[] = array(
-				'id'   => $zone->zone_id,
-				'name' => $zone->zone_name,
-			);
-		}
-
-		//error_log("[Pathao Debug] Parsed Zones: " . print_r($zones_list, true));
-		//error_log("[Pathao Debug] get_zones() COMPLETED");
-		//error_log("------------------------------------------------------");
-
-		return $zones_list;
-	}
-
-
-	/**
-	 * Get areas from pathao server.
-	 *
-	 * @param int $zone_id Zone Id.
-	 *
-	 * @return \stdClass
-	 */
-	public function get_areas(int $zone_id): \stdClass
-	{
-		$transient_key = "_sdevs_pathao_zone_{$zone_id}_areas";
-
-		$has_transient = $this->has_transient($transient_key);
-		if ($has_transient) {
-			return $has_transient;
-		}
-
-		$res = $this->request('wp_remote_get', "/aladdin/api/v1/zones/$zone_id/area-list");
-
-		$has_errors = $this->has_errors($res);
-		if ($has_errors) {
-			return $has_errors;
-		}
-
-		$encoded_body = wp_remote_retrieve_body($res);
-
-		$body          = json_decode($encoded_body);
-		$data          = new \stdClass();
-		$data->success = true;
-		$data->data    = array();
-		foreach ($body->data->data as $area) {
-			$data->data[] = (object) array(
-				'id'   => $area->area_id,
-				'name' => $area->area_name,
-			);
-		}
-
-		// set transient for 12-hrs.
-		set_transient($transient_key, $data->data, 720 * 60);
-
-		return $data;
-	}
-
-	/**
-	 * Get stores from pathao server.
-	 *
-	 * @return \stdClass
-	 */
-
-	public function get_stores(): \stdClass
-	{
-		$transient_key = '_sdevs_pathao_stores';
-
-		// Check cache
-		$has_transient = $this->has_transient($transient_key);
-		if ($has_transient) {
-			//error_log("[Pathao Debug] get_stores(): Using cached data");
-			return $has_transient;
-		}
-
-		$url = 'aladdin/api/v1/stores';
-
-		//error_log("------------------------------------------------------");
-		//error_log("[Pathao Debug] get_stores() CALLED");
-		error_log("[Pathao Debug] Request URL: " . $this->get_base_url() . $url);
-
-		// Make API call
-		$res = $this->request('wp_remote_get', $url);
-
-		//error_log("[Pathao Debug] Raw response from /stores: " . print_r($res, true));
-
-		// Handle errors
-		$has_errors = $this->has_errors($res);
-		if ($has_errors) {
-			//error_log("[Pathao Debug] /stores ERROR parsed: " . print_r($has_errors, true));
-			return $has_errors;
-		}
-
-		// Extract body
-		$encoded_body = wp_remote_retrieve_body($res);
-		// //error_log("[Pathao Debug] /stores RAW BODY: " . $encoded_body);
-
-		$body = json_decode($encoded_body);
-		// //error_log("[Pathao Debug] /stores DECODED BODY: " . print_r($body, true));
-
-		// Handle missing data
-		if (
-			!isset($body->data)
-			|| !isset($body->data->data)
-			|| !is_array($body->data->data)
-		) {
-			$err = new \stdClass();
-			$err->success  = false;
-			$err->messages = array('Stores data missing or malformed.');
-
-			//error_log("[Pathao Debug] ERROR: Stores structure is invalid");
-			return $err;
-		}
-
-		// Build response
-		$data          = new \stdClass();
-		$data->success = true;
-		$data->data    = array();
-
-		foreach ($body->data->data as $store) {
-			$data->data[] = (object) array(
-				'id'   => $store->store_id ?? null,
-				'name' => $store->store_name ?? '',
-			);
-		}
-
-		//error_log("[Pathao Debug] Parsed Stores: " . print_r($data->data, true));
-
-		// Cache for 5 minutes
-		set_transient($transient_key, $data->data, 5 * 60);
-
-		//error_log("[Pathao Debug] get_stores() COMPLETED");
-		//error_log("------------------------------------------------------");
-
-		return $data;
-	}
-
-	public function send_order(int $order_id, $args = [])
-	{
-		$order = wc_get_order($order_id);
-		error_log('[Pathao Debug] send_order called for Order ID: ' . $order_id);
-
-		if (!$order) {
-			wp_send_json_error(['message' => 'Order not found']);
-		}
-
-		$shipping = $order->get_address('shipping');
-		$billing  = $order->get_address('billing');
-
-		// Fallback if shipping empty
-		if (empty($shipping['address_1'])) {
-			$shipping = $billing;
-		}
-
-		$body = [
-			'merchant_order_id' => $order->get_id(),
-			'recipient_name'    => $shipping['first_name'] . ' ' . $shipping['last_name'],
-			'recipient_phone'   => $billing['phone'],
-			'recipient_address' => $shipping['address_1'],
-			'city_id'           => get_post_meta($order->get_id(), '_pathao_city', true),
-			'zone_id'           => get_post_meta($order->get_id(), '_pathao_zone', true),
-			'area_id'           => get_post_meta($order->get_id(), '_pathao_area', true),
-			'amount_to_collect' => $order->get_total(),
-			'weight'            => get_post_meta($order->get_id(), '_pathao_weight', true) ?: 1,
-			'items'             => [],
-		];
-
-		error_log('[Pathao Debug] Base order body: ' . print_r($body, true));
-		$body = wp_parse_args($args, $body);
-
-		// send request to Pathao API
-		$res = $this->request('wp_remote_post', '/aladdin/api/v1/orders', ['body' => json_encode($body)]);
-
-		$has_errors = $this->has_errors($res);
-		if ($has_errors) {
-			return $has_errors;
-		}
-
-		$res_data = json_decode(wp_remote_retrieve_body($res))->data;
-
-		$data          = new \stdClass();
-		$data->success = true;
-		$data->data    = (object) [
-			'consignment_id'    => $res_data->consignment_id,
-			'merchant_order_id' => $res_data->merchant_order_id,
-			'order_status'      => $res_data->order_status,
-			'delivery_fee'      => $res_data->delivery_fee,
-		];
-
-		return $data;
-	}
-
-
-
-	public function price_calculation($args)
-	{
-		$body = wp_parse_args(
-			$args,
-			array(
-				'store_id'      => sdevs_pathao_store_id(),
-				'item_type'     => 2,
-				'delivery_type' => apply_filters('sdevs_pathao_default_delivery_type', 48),
-			)
-		);
-
-		$res = $this->request('wp_remote_post', 'aladdin/api/v1/merchant/price-plan', array('body' => $body));
-
-		$has_errors = $this->has_errors($res);
-		if ($has_errors) {
-			return $has_errors;
-		}
-
-		$encoded_data = wp_remote_retrieve_body($res);
-		$decoded_data = json_decode($encoded_data);
-
-		$data          = new \stdClass();
-		$data->success = true;
-		$data->data    = (object) array(
-			'price'       => $decoded_data->data->price,
-			'cod_enabled' => $decoded_data->data->cod_enabled,
-		);
-
-		return $data;
-	}
-
-	/**
-	 * Generate Token from pathao server.
-	 *
-	 * @param array $args Args.
-	 *
-	 * @return \stdClass
-	 */
-	public function generate_tokens($args)
-	{
-		$body = wp_parse_args(
-			$args,
-			array(
-				'grant_type' => 'password',
-			)
-		);
-
-		// JSON encode the body
-		$json_body = json_encode($body);
-
-		// Make the request
-		// $res = $this->request(
-		//     'wp_remote_post',
-		//     'aladdin/api/v1/issue-token',
-		//     array( 'body' => $json_body )
-		// );
-
-		$res = $this->request(
-			'wp_remote_post',
-			'aladdin/api/v1/issue-token',
-			array(
-				'body' => json_encode($body), // encode array to JSON
-			)
-		);
-
-		error_log('[Pathao Debug] Raw response from generate_tokens API: ' . print_r($res, true));
-
-		$has_errors = $this->has_errors($res);
-		if ($has_errors) {
-			error_log('[Pathao Debug] generate_tokens has errors: ' . print_r($has_errors, true));
-			return $has_errors;
-		}
-
-		$body     = wp_remote_retrieve_body($res);
-		$res_data = json_decode($body);
-
-		$data          = new \stdClass();
-		$data->success = true;
-		$data->data    = (object) array(
-			'access_token'  => $res_data->access_token,
-			'refresh_token' => $res_data->refresh_token,
-		);
-
-		return $data;
-	}
-
-
-	/**
-	 * Refresh tokens.
-	 *
-	 * @return \stdClass
-	 */
-	public function refresh_tokens()
-	{
-		$client_id     = get_option('pathao_client_id');
-		$client_secret = get_option('pathao_client_secret');
-		$refresh_token = get_option('pathao_refresh_token');
-
-		$data = new stdClass();
-		if (! $client_id || ! $client_secret || ! $refresh_token) {
-			$data->success  = false;
-			$data->messages = array(__('Please generate tokens at first!', 'integration-of-pathao-for-woocommerce'));
-			return;
-		}
-
-		$body = array(
-			'client_id'     => $client_id,
-			'client_secret' => $client_secret,
-			'refresh_token' => $refresh_token,
-			'grant_type'    => 'refresh_token',
-		);
-
-		$res = $this->request('wp_remote_post', 'aladdin/api/v1/issue-token', array('body' => $body));
-
-		$has_errors = $this->has_errors($res);
-		if ($has_errors) {
-			return $has_errors;
-		}
-
-		$body     = wp_remote_retrieve_body($res);
-		$res_data = json_decode($body);
-
-		$data->success = true;
-		$data->data    = (object) array(
-			'access_token'  => $res_data->access_token,
-			'refresh_token' => $res_data->refresh_token,
-		);
-
-		return $data;
-	}
+	
+    /*-----------------------------------------
+    | BASE URL
+    ------------------------------------------*/
+    private function get_base_url(): string
+    {
+        return get_option('pathao_sandbox_mode')
+            ? 'https://courier-api-sandbox.pathao.com/'
+            : 'https://api-hermes.pathao.com/';
+    }
+
+    /*-----------------------------------------
+    | ACCESS & REFRESH TOKENS
+    ------------------------------------------*/
+    private function ensure_access_token()
+    {
+        $token = get_option('pathao_access_token');
+
+        if (!$token) {
+            error_log("[Pathao Debug] No access token found — refreshing...");
+            $new = $this->refresh_tokens();
+            if ($new && $new->success) {
+                update_option('pathao_access_token', $new->data->access_token);
+                update_option('pathao_refresh_token', $new->data->refresh_token);
+                return $new->data->access_token;
+            }
+            return false;
+        }
+
+        return $token;
+    }
+
+    /*-----------------------------------------
+    | REQUEST WRAPPER (AUTO TOKEN REFRESH)
+    ------------------------------------------*/
+    private function request($func, string $path, array $args = [])
+    {
+        $token = $this->ensure_access_token();
+
+        if (!$token) {
+            error_log("[Pathao Debug] TOKEN ERROR: cannot refresh token");
+            return ['error' => 'token_missing'];
+        }
+
+        $default_headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/json',
+            'Accept'        => 'application/json',
+        ];
+
+        $final_args = array_merge(['headers' => $default_headers], $args);
+
+        $url = $this->get_base_url() . ltrim($path, '/');
+
+        $response = $func($url, $final_args);
+
+        // Pathao expired token → 401
+        if (wp_remote_retrieve_response_code($response) === 401) {
+            error_log("[Pathao Debug] 401 detected — refreshing token");
+
+            $new = $this->refresh_tokens();
+            if ($new && $new->success) {
+                update_option('pathao_access_token', $new->data->access_token);
+                update_option('pathao_refresh_token', $new->data->refresh_token);
+
+                $final_args['headers']['Authorization'] = 'Bearer ' . $new->data->access_token;
+
+                $response = $func($url, $final_args);
+            }
+        }
+
+        return $response;
+    }
+
+    /*-----------------------------------------
+    | ERROR HANDLER
+    ------------------------------------------*/
+    private function has_errors($res)
+    {
+        $code = wp_remote_retrieve_response_code($res);
+        $data = new stdClass();
+
+        if ($code === 401) {
+            $data->success = false;
+            $data->messages = ['Unauthorized access token'];
+            return $data;
+        }
+
+        if ($code === 422) {
+            $body = json_decode(wp_remote_retrieve_body($res));
+            $messages = [];
+
+            if (!empty($body->errors)) {
+                foreach ($body->errors as $err) {
+                    if (is_array($err)) $messages = array_merge($messages, $err);
+                    else $messages[] = $err;
+                }
+            }
+
+            $data->success = false;
+            $data->messages = $messages;
+            return $data;
+        }
+
+        if ($code < 200 || $code > 299) {
+            $data->success = false;
+            $data->messages = ['Something went wrong'];
+            return $data;
+        }
+
+        return false;
+    }
+
+    /*-----------------------------------------
+    | TRANSIENT CHECK
+    ------------------------------------------*/
+    private function has_transient($key)
+    {
+        $saved = get_transient($key);
+
+        if ($saved) {
+            return (object)[
+                'success' => true,
+                'data'    => $saved
+            ];
+        }
+
+        return false;
+    }
+
+    /*-----------------------------------------
+    | GET CITIES
+    ------------------------------------------*/
+    public function get_cities()
+    {
+        $transient_key = '_sdevs_pathao_cities';
+
+        if ($cached = $this->has_transient($transient_key)) {
+            error_log("[Pathao Debug] get_cities(): Using cached");
+            return $cached;
+        }
+
+        $res = $this->request('wp_remote_get', 'aladdin/api/v1/cities');
+
+        if ($err = $this->has_errors($res)) {
+            error_log("[Pathao Debug] /cities ERROR: " . print_r($err, true));
+            return $err;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        error_log("[Pathao Debug] /cities RAW: " . json_encode($body));
+
+        if (!isset($body->data->data)) {
+            return (object)[
+                'success' => false,
+                'messages' => ['Cities data malformed']
+            ];
+        }
+
+        $list = [];
+        foreach ($body->data->data as $c) {
+            $list[] = (object)[
+                'id'   => $c->city_id,
+                'name' => $c->city_name
+            ];
+        }
+
+        set_transient($transient_key, $list, 12 * HOUR_IN_SECONDS);
+
+        return (object)['success' => true, 'data' => $list];
+    }
+
+    /*-----------------------------------------
+    | GET ZONES
+    ------------------------------------------*/
+    public function get_zones($city_id)
+    {
+        $res = $this->request(
+            'wp_remote_get',
+            "aladdin/api/v1/zones?city_id={$city_id}"
+        );
+
+        if ($err = $this->has_errors($res)) {
+            return $err;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        if (!isset($body->data->data)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($body->data->data as $z) {
+            $out[] = [
+                'id'   => $z->zone_id,
+                'name' => $z->zone_name,
+            ];
+        }
+
+        return $out;
+    }
+
+    /*-----------------------------------------
+    | GET AREAS
+    ------------------------------------------*/
+    public function get_areas(int $zone_id): stdClass
+    {
+        $key = "_sdevs_pathao_zone_{$zone_id}_areas";
+
+        if ($c = $this->has_transient($key)) {
+            return $c;
+        }
+
+        $res = $this->request(
+            'wp_remote_get',
+            "aladdin/api/v1/zones/{$zone_id}/area-list"
+        );
+
+        if ($err = $this->has_errors($res)) return $err;
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        $list = [];
+        foreach ($body->data->data as $a) {
+            $list[] = (object)[
+                'id'   => $a->area_id,
+                'name' => $a->area_name,
+            ];
+        }
+
+        set_transient($key, $list, 12 * HOUR_IN_SECONDS);
+
+        return (object)['success' => true, 'data' => $list];
+    }
+
+    /*-----------------------------------------
+    | GET STORES
+    ------------------------------------------*/
+    public function get_stores(): stdClass
+    {
+        $key = '_sdevs_pathao_stores';
+
+        if ($c = $this->has_transient($key)) {
+            error_log("[Pathao Debug] get_stores(): Using cached");
+            return $c;
+        }
+
+        $res = $this->request('wp_remote_get', 'aladdin/api/v1/stores');
+
+        if ($err = $this->has_errors($res)) {
+            error_log("[Pathao Debug] Stores ERROR: " . print_r($err, true));
+            return $err;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        error_log("[Pathao Debug] /stores RAW: " . json_encode($body));
+
+        if (!isset($body->data->data) || !is_array($body->data->data)) {
+            return (object)[
+                'success' => false,
+                'messages' => ['Stores malformed']
+            ];
+        }
+
+        $list = [];
+        foreach ($body->data->data as $s) {
+            $list[] = (object)[
+                'id'   => $s->store_id,
+                'name' => $s->store_name
+            ];
+        }
+
+        error_log("[Pathao Debug] Parsed Stores: " . print_r($list, true));
+
+        set_transient($key, $list, 5 * MINUTE_IN_SECONDS);
+
+        return (object)['success' => true, 'data' => $list];
+    }
+
+    /*-----------------------------------------
+    | ORDER PAYLOAD VALIDATOR
+    ------------------------------------------*/
+    private function validate_order_payload($p)
+    {
+        $required = [
+            'store_id',
+            'recipient_name',
+            'recipient_phone',
+            'recipient_address',
+            'delivery_type',
+            'item_type',
+            'item_quantity',
+            'item_weight',
+            'amount_to_collect'
+        ];
+
+        error_log("[Pathao Debug] VALIDATING PAYLOAD: " . json_encode($p));
+
+        foreach ($required as $f) {
+            if (!isset($p[$f]) || $p[$f] === '') {
+                return "Missing required field: {$f}";
+            }
+        }
+
+        if (strlen($p['recipient_phone']) != 11) {
+            return "Recipient phone must be 11 digits";
+        }
+
+        if (strlen($p['recipient_address']) < 10) {
+            return "Recipient address must be at least 10 characters";
+        }
+
+        return true;
+    }
+
+    /*-----------------------------------------
+    | SEND ORDER TO PATHAO
+    ------------------------------------------*/
+    public function send_order(int $order_id): stdClass
+    {
+        error_log("-----------------------------------------------------------");
+        error_log("[Pathao Debug] send_order(): ORDER ID {$order_id}");
+
+        if (!function_exists('wc_get_order')) {
+            return (object)['success' => false, 'messages' => ['WooCommerce missing']];
+        }
+
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return (object)['success' => false, 'messages' => ['Invalid order']];
+        }
+
+        /* Extract Fields */
+        $store_id = get_option('sdevs_pathao_store_id');
+        $recipient_name = trim($order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name());
+        $recipient_phone = $order->get_billing_phone();
+        $recipient_address = $order->get_shipping_address_1() . ', ' . $order->get_shipping_city();
+
+        $payload = [
+            'store_id'          => (int)$store_id,
+            'merchant_order_id' => (string)$order_id,
+            'recipient_name'    => $recipient_name,
+            'recipient_phone'   => $recipient_phone,
+            'recipient_address' => $recipient_address,
+            'delivery_type'     => 48,
+            'item_type'         => 2,
+            'special_instruction' => $order->get_customer_note() ?: '',
+            'item_quantity'     => $order->get_item_count(),
+            'item_weight'       => "0.5",
+            'item_description'  => "WooCommerce Order #{$order_id}",
+            'amount_to_collect' =>
+                $order->get_payment_method() === 'cod'
+                ? (int)$order->get_total()
+                : 0
+        ];
+
+        /* Validate */
+        $validate = $this->validate_order_payload($payload);
+        if ($validate !== true) {
+            error_log("[Pathao Debug] PAYLOAD FAILED: {$validate}");
+            return (object)['success' => false, 'messages' => [$validate]];
+        }
+
+        error_log("[Pathao Debug] PAYLOAD OK: " . json_encode($payload));
+
+        /* Send */
+        $res = $this->request(
+            'wp_remote_post',
+            'aladdin/api/v1/orders',
+            ['body' => json_encode($payload)]
+        );
+
+        if ($err = $this->has_errors($res)) {
+            error_log("[Pathao Debug] API ERR: " . print_r($err, true));
+            return $err;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        error_log("[Pathao Debug] ORDER RESPONSE: " . json_encode($body));
+
+        return (object)['success' => true, 'data' => $body];
+    }
+
+    /*-----------------------------------------
+    | PRICE CALCULATION
+    ------------------------------------------*/
+    public function price_calculation($args)
+    {
+        $body = wp_parse_args($args, [
+            'store_id'      => sdevs_pathao_store_id(),
+            'item_type'     => 2,
+            'delivery_type' => 48,
+        ]);
+
+        $res = $this->request(
+            'wp_remote_post',
+            'aladdin/api/v1/merchant/price-plan',
+            ['body' => json_encode($body)]
+        );
+
+        if ($err = $this->has_errors($res)) return $err;
+
+        $d = json_decode(wp_remote_retrieve_body($res));
+
+        return (object)[
+            'success' => true,
+            'data' => (object)[
+                'price'       => $d->data->price,
+                'cod_enabled' => $d->data->cod_enabled
+            ]
+        ];
+    }
+
+    /*-----------------------------------------
+    | TOKEN GENERATION
+    ------------------------------------------*/
+    public function generate_tokens($args)
+    {
+        $body = wp_parse_args($args, ['grant_type' => 'password']);
+
+        $res = $this->request(
+            'wp_remote_post',
+            'aladdin/api/v1/issue-token',
+            ['body' => json_encode($body)]
+        );
+
+        if ($err = $this->has_errors($res)) return $err;
+
+        $d = json_decode(wp_remote_retrieve_body($res));
+
+        return (object)[
+            'success' => true,
+            'data' => (object)[
+                'access_token'  => $d->access_token,
+                'refresh_token' => $d->refresh_token
+            ]
+        ];
+    }
+
+    /*-----------------------------------------
+    | TOKEN REFRESH
+    ------------------------------------------*/
+    public function refresh_tokens()
+    {
+        $client_id     = get_option('pathao_client_id');
+        $client_secret = get_option('pathao_client_secret');
+        $refresh_token = get_option('pathao_refresh_token');
+
+        if (!$client_id || !$client_secret || !$refresh_token) {
+            return (object)[
+                'success'  => false,
+                'messages' => ['Token info missing']
+            ];
+        }
+
+        $body = [
+            'client_id'     => $client_id,
+            'client_secret' => $client_secret,
+            'refresh_token' => $refresh_token,
+            'grant_type'    => 'refresh_token',
+        ];
+
+        $res = $this->request(
+            'wp_remote_post',
+            'aladdin/api/v1/issue-token',
+            ['body' => json_encode($body)]
+        );
+
+        if ($err = $this->has_errors($res)) return $err;
+
+        $d = json_decode(wp_remote_retrieve_body($res));
+
+        return (object)[
+            'success' => true,
+            'data' => (object)[
+                'access_token'  => $d->access_token,
+                'refresh_token' => $d->refresh_token
+            ]
+        ];
+    }
+	
 }
+

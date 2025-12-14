@@ -1,65 +1,37 @@
 <?php
 
-/**
- * Scripts and Styles Class.
- *
- * @package SpringDevs\Pathao\Assets
- */
-
 namespace SpringDevs\Pathao;
 
-if (! defined('ABSPATH')) {
-    exit;
-}
+class Assets {
 
-class Assets
-{
-    /**
-     * Assets constructor.
-     */
-    public function __construct()
-    {
-        if (is_admin()) {
-            // Enqueue scripts & styles for admin
-            add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
-        } else {
-            // Enqueue frontend scripts & styles
-            add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_scripts']);
-        }
+    public function __construct() {
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
     }
 
-    /**
-     * Get all registered scripts
-     *
-     * @return array
-     */
-    public function get_scripts()
-    {
+    public function get_scripts() { 
+
         $plugin_js_assets_path = SDEVS_PATHAO_ASSETS . '/js/';
 
         return [
             'pathao_toast_script' => [
                 'src'       => $plugin_js_assets_path . 'jquery.toast.min.js',
                 'deps'      => ['jquery'],
-                'version'   => SDEVS_PATHAO_VERSION,
                 'in_footer' => true,
             ],
             'pathao_admin_script' => [
                 'src'       => $plugin_js_assets_path . 'admin.js',
-                'deps'      => ['jquery', 'pathao_toast_script'],
-                'version'   => SDEVS_PATHAO_VERSION,
+                'deps'      => ['jquery'],
+                'in_footer' => true,
+            ],
+            'pathao_popup_script' => [
+                'src'       => $plugin_js_assets_path . 'popup.js',
+                'deps'      => ['jquery'],
                 'in_footer' => true,
             ],
         ];
     }
 
-    /**
-     * Get all registered styles
-     *
-     * @return array
-     */
-    public function get_styles()
-    {
+    public function get_styles() {
         $plugin_css_assets_path = SDEVS_PATHAO_ASSETS . '/css/';
 
         return [
@@ -72,70 +44,55 @@ class Assets
         ];
     }
 
-    /**
-     * Enqueue admin scripts & styles
-     *
-     * @param string $hook Current admin page
-     */
-    public function enqueue_scripts($hook)
-    {
-		error_log('[Pathao Debug] Enqueueing admin scripts for hook: ' . $hook);
-        // Only load on WooCommerce orders page
-        // if ($hook !== 'edit.php' || get_post_type() !== 'shop_order') {
-        //     return;
-        // }
-
-        // Enqueue JS
-	foreach ($this->get_scripts() as $handle => $script) {
-			wp_enqueue_script(
-				$handle,
-				$script['src'],
-				$script['deps'] ?? [],
-				$script['version'] ?? SDEVS_PATHAO_VERSION,
-				$script['in_footer'] ?? true
-			);
-		}
-
-        // Enqueue CSS
-        foreach ($this->get_styles() as $handle => $style) {
-            wp_enqueue_style(
-                $handle,
-                $style['src'],
-                $style['deps'] ?? [],
-                SDEVS_PATHAO_VERSION
-            );
-        }
-
-        // Localize AJAX URL and nonce
-        wp_localize_script('pathao_admin_script', 'pathao_admin_obj', [
-            'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce'    => wp_create_nonce('pathao_send_order'),
-        ]); 
-    }
-
-    /**
-     * Enqueue frontend scripts & styles
-     */
-    public function enqueue_frontend_scripts()
-    {
-        // Add frontend scripts here if needed
-        foreach ($this->get_scripts() as $handle => $script) {
-            wp_enqueue_script(
+    public function register_scripts() {
+        foreach ($this->get_scripts() as $handle => $script) { 
+            wp_register_script(
                 $handle,
                 $script['src'],
-                $script['deps'] ?? [],
-                $script['version'] ?? SDEVS_PATHAO_VERSION,
-                $script['in_footer'] ?? true
+                $script['deps'],
+                SDEVS_PATHAO_VERSION,
+                $script['in_footer']
             );
         }
+    }
 
+    public function register_styles() {
         foreach ($this->get_styles() as $handle => $style) {
-            wp_enqueue_style(
+            wp_register_style(
                 $handle,
                 $style['src'],
-                $style['deps'] ?? [],
+                isset($style['deps']) ? $style['deps'] : [],
                 SDEVS_PATHAO_VERSION
             );
         }
     }
+
+    public function enqueue_admin_assets() {
+        $screen = get_current_screen();
+
+        // 🔧 TEMP: Disable screen check so assets load everywhere
+        // if (!$screen || $screen->id !== 'edit-shop_order') {
+        //     return;
+        // }
+  
+        // Register
+        $this->register_scripts();
+        $this->register_styles();
+
+        // Enqueue scripts
+        foreach ($this->get_scripts() as $handle => $script) {
+            wp_enqueue_script($handle);
+        }
+
+        wp_localize_script('pathao_popup_script', 'PTC_AJAX', [
+            'ajax_url' => admin_url('admin-ajax.php')
+        ]);
+
+        // Enqueue styles
+        foreach ($this->get_styles() as $handle => $style) {
+            wp_enqueue_style($handle);
+        }
+    }
+
+
 }
