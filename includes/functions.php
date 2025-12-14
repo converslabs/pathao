@@ -25,7 +25,6 @@ function is_sdevs_pathao_pro_activated(): bool {
  */
 function is_pathao_shipping_enabled(): bool {
 	$settings = get_option( 'woocommerce_pathao_settings' );
-	
 error_log("Store setting: " . print_r(get_option('woocommerce_pathao_settings'), true));
 
 	return $settings && isset( $settings['enabled'] ) && 'yes' === $settings['enabled'];

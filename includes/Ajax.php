@@ -297,7 +297,8 @@ class Ajax
 		}
 
 		// Use saved store id and not hardcoded
-		$store_id = pathao_store_id() ?: get_option('pathao_store_id');
+		// $store_id = pathao_store_id() ?: get_option('pathao_store_id');
+		$store_id = pathao_store_id();
         error_log("[Pathao Debug] Ajax Using Store ID: {$store_id}");
 
 		if (! $store_id) {
@@ -359,27 +360,28 @@ class Ajax
 			return false;
 		}
 
-		// Normalise $res if facade returns stdClass or array
-		$result = is_array($res) ? $res : (is_object($res) ? (array) $res : $res);
+		// Always work with stdClass
+		$result = json_decode(json_encode($res));
+
 
 		// If success, save consignment id and status to order meta and fire your hook
 		$consignment_id = null;
 		$order_status   = null;
 		$delivery_fee   = null;
 
-		if (isset($result['data']['consignment_id'])) {
-			$consignment_id = sanitize_text_field($result['data']['consignment_id']);
-		} elseif (is_object($res) && isset($res->data->consignment_id)) {
+		if (isset($result->data->consignment_id)) {
+            $consignment_id = sanitize_text_field($result->data->consignment_id);
+       } elseif (is_object($res) && isset($res->data->consignment_id)) {
 			$consignment_id = sanitize_text_field($res->data->consignment_id);
 		}
 
-		if (isset($result['data']['order_status'])) {
+		if (isset($result->data->order_status)) {
 			$order_status = sanitize_text_field($result['data']['order_status']);
 		} elseif (is_object($res) && isset($res->data->order_status)) {
 			$order_status = sanitize_text_field($res->data->order_status);
 		}
 
-		if (isset($result['data']['delivery_fee'])) {
+		if (isset($result->data->delivery_fee))  {
 			$delivery_fee = $result['data']['delivery_fee'];
 		} elseif (is_object($res) && isset($res->data->delivery_fee)) {
 			$delivery_fee = $res->data->delivery_fee;

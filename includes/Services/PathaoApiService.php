@@ -341,9 +341,9 @@ class PathaoApiService
         }
 
         /* Extract Fields */
-        $store_id = get_option('pathao_store_id');
-        error_log("[Pathao Debug] Up Store ID from option: " . print_r($store_id, true));
-        error_log("[Pathao Debug] xxUsing Store ID: {$store_id}");
+        $settings = get_option('woocommerce_pathao_settings');
+        $store_id = (int)$settings['store'];
+
         $recipient_name = trim($order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name());
         $recipient_phone = $order->get_billing_phone();
         if (empty($recipient_phone)) {
@@ -352,25 +352,26 @@ class PathaoApiService
 
 
         $recipient_address = $order->get_shipping_address_1() . ', ' . $order->get_shipping_city(); 
+ 
 
         $payload = [
-            'store_id'          => (int)$store_id,
+            'store_id' => $store_id,
             'merchant_order_id' => (string)$order_id,
-            'recipient_name'    => $recipient_name,
-            'recipient_phone'   => $recipient_phone,
+            'recipient_name' => $recipient_name,
+            'recipient_phone' => $recipient_phone,
             'recipient_address' => $recipient_address,
-            'delivery_type'     => 48,
-            'item_type'         => 2,
+            'delivery_type' => 48,
+            'item_type' => 2,
             'special_instruction' => $order->get_customer_note() ?: '',
-            'item_quantity'     => $order->get_item_count(),
-            'item_weight'       => "0.5",
-            'item_description'  => "WooCommerce Order #{$order_id}",
-            'amount_to_collect' =>
-                $order->get_payment_method() === 'cod'
+            'item_quantity' => $order->get_item_count(),
+            'item_weight' => "0.5",
+            'item_description' => "WooCommerce Order #{$order_id}",
+            'amount_to_collect' => $order->get_payment_method() === 'cod'
                 ? (int)$order->get_total()
-                : 0
+                : 0,
         ];
 
+        error_log("[Pathao Debug] Constructed PAYLOAD: " . json_encode($payload));
         /* Validate */
         $validate = $this->validate_order_payload($payload);
         if ($validate !== true) {
