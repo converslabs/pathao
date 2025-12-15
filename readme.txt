@@ -80,6 +80,16 @@ Sometimes, especially when new versions are released, it might only require some
 4.  Pathao order status
 
 == Changelog ==
+ 
+= version 1.1.1 =
+* **feature:**  Pathao Shipping Integration for WooCommerce.
+* **fix:** add translation and sanitization.
+* **remove:** previous Code.
+* **Improve:** loading and performance.
+* **refactor:** cleaned up Ajax handler structure for send_order_to_pathao with clearer order loading and payload building.
+* **refactor:** apply API call flow to properly fallback to PathaoApiService when facades are unavailable.
+* **security:** added stronger nonce verification and bailout conditions in all AJAX endpoints to block invalid requests.
+ 
 
 = 1.1 =
 * **New:** Pathao column on order list.
