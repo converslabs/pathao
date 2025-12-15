@@ -403,7 +403,7 @@ class PathaoApiService
 
         $body = json_decode(wp_remote_retrieve_body($res));
 
-        error_log("[Pathao Debug] ORDER RESPONSE: " . json_encode($body));
+        error_log("[Pathao Debug] AORDER RESPONSE: " . json_encode($body));
 
         return (object)['success' => true, 'data' => $body];
     }

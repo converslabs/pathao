@@ -382,6 +382,8 @@ class Ajax
 		}
 
 		if (isset($result->data->delivery_fee))  {
+
+
 			$delivery_fee = $result['data']['delivery_fee'];
 		} elseif (is_object($res) && isset($res->data->delivery_fee)) {
 			$delivery_fee = $res->data->delivery_fee;

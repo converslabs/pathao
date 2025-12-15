@@ -1,0 +1,173 @@
+{
+  /* ================= Editor ================= */
+  "editor.fontFamily": "Source Code Pro, Fira Code, Consolas, 'Courier New', monospace",
+  "editor.fontSize": 18,
+  "editor.wordWrap": "on",
+  "editor.formatOnSave": true,
+  "editor.accessibilitySupport": "on",
+
+  /* ================= Workbench ================= */
+  "workbench.iconTheme": "vscode-icons",
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.empty.hint": "hidden",
+  "workbench.activityBar.location": "top",
+  "workbench.secondarySideBar.defaultVisibility": "hidden",
+  "window.commandCenter": true,
+
+  /* ================= HTML / JS ================= */
+  "html.format.indentInnerHtml": true,
+  "html.completion.attributeDefaultValue": "singlequotes",
+  "javascript.preferences.quoteStyle": "single",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  /* ================= PHP ================= */
+  "[php]": {
+    "editor.defaultFormatter": "valeryanm.vscode-phpsab",
+    "editor.formatOnSave": false
+  },
+
+  "phpsab.executablePathCBF": "/Users/themexpert/.composer/vendor/bin/phpcbf",
+  "phpsab.executablePathCS": "/Users/themexpert/.composer/vendor/bin/phpcs",
+  "phpsab.standard": "WordPress",
+  "phpsab.autoRulesetSearch": false,
+  "phpsab.debug": true, 
+
+  /* Disable phpfmt (conflicts with PHPSAB) */
+  "phpfmt.enable": false,
+
+  /* ================= Spell Checker ================= */
+  "cSpell.userWords": [
+    "Afghanistan",
+    "basket",
+    "Chart.js",
+    "dashicons",
+    "immer",
+    "inStock",
+    "Nafish",
+    "nftushar",
+    "postData",
+    "pqrc",
+    "QRCode",
+    "readingtime",
+    "shortcode",
+    "Tushar",
+    "wceazy",
+    "WooCommerce",
+    "wordcount",
+    "WordPress",
+    "WPINC"
+  ],
+
+  /* ================= Emmet ================= */
+  "emmet.triggerExpansionOnTab": true,
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact"
+  },
+
+  /* ================= Terminal ================= */
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+
+  /* ================= Extensions ================= */
+  "tabnine.experimentalAutoImports": true,
+  "intelephense.stubs": [
+    "apache",
+    "bcmath",
+    "bz2",
+    "calendar",
+    "com_dotnet",
+    "Core",
+    "ctype",
+    "curl",
+    "date",
+    "dba",
+    "dom",
+    "enchant",
+    "exif",
+    "FFI",
+    "fileinfo",
+    "filter",
+    "fpm",
+    "ftp",
+    "gd",
+    "gettext",
+    "gmp",
+    "hash",
+    "iconv",
+    "imap",
+    "intl",
+    "json",
+    "ldap",
+    "libxml",
+    "mbstring",
+    "meta",
+    "mysqli",
+    "oci8",
+    "odbc",
+    "openssl",
+    "pcntl",
+    "pcre",
+    "PDO",
+    "pdo_ibm",
+    "pdo_mysql",
+    "pdo_pgsql",
+    "pdo_sqlite",
+    "pgsql",
+    "Phar",
+    "posix",
+    "pspell",
+    "random",
+    "readline",
+    "Reflection",
+    "session",
+    "shmop",
+    "SimpleXML",
+    "snmp",
+    "soap",
+    "sockets",
+    "sodium",
+    "SPL",
+    "sqlite3",
+    "standard",
+    "superglobals",
+    "sysvmsg",
+    "sysvsem",
+    "sysvshm",
+    "tidy",
+    "tokenizer",
+    "xml",
+    "xmlreader",
+    "xmlrpc",
+    "xmlwriter",
+    "xsl",
+    "Zend OPcache",
+    "zip",
+    "zlib",
+    "wordpress"
+  ],
+
+  /* ================= Frontend ================= */
+  "[scss]": {
+    "editor.defaultFormatter": "sibiraj-s.vscode-scss-formatter"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "sibiraj-s.vscode-scss-formatter"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "vscode.html-language-features"
+  },
+
+  /* ================= Misc ================= */
+  "files.autoSave": "afterDelay",
+  "security.workspace.trust.untrustedFiles": "open",
+  "liveServer.settings.donotShowInfoMsg": true,
+  "liveServer.settings.donotVerifyTags": true,
+  "explorer.confirmDelete": false,
+  "remote.SSH.remotePlatform": {
+    "sandbox.gw39vc.csb": "linux"
+  },
+  "chat.instructionsFilesLocations": {
+    ".github/instructions": true
+  },
+  "vsicons.dontShowNewVersionMessage": true,
+  "postman.mcp.notifications.postmanMCP": false
+}

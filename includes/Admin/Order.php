@@ -23,6 +23,24 @@ class Order
 
         // Load popup at admin footer
         add_action('admin_footer', array($this, 'load_pathao_popup_view'));
+        add_action('admin_menu', array($this, 'pathao_order_submenu'));
+    }
+
+
+    public function pathao_order_submenu() {  
+        add_menu_page(
+            'Pathao Orders Page Title',      
+            'Pathao Orders',          
+            'manage_options',           
+            'pathao-orders-menu-slug',    
+            array($this, 'pathao_orders_menu_content'),
+            'dashicons-cart',               
+            22     
+        );
+    } 
+     
+    function pathao_orders_menu_content() { 
+        echo '<h3>Welcome to Pathao Orders Menu</h3>'; 
     }
 
     /**
@@ -61,12 +79,13 @@ class Order
             return;
         }
 
-        // Normalize order object
+        // Normalize the order object
         if ($order instanceof WC_Order) {
             $order_obj = $order;
         } else {
             $order_id = absint($order);
             $order_obj = wc_get_order($order_id);
+
             if (!$order_obj) {
                 echo esc_html('N/A');
                 return;
@@ -74,31 +93,40 @@ class Order
         }
 
         $order_id        = $order_obj->get_id();
-        $consignment_id  = $order_obj->get_meta('_pathao_consignment_id', true);
+        $consignment_id  = trim($order_obj->get_meta('_pathao_consignment_id', true));
 
+        // Button HTML
         $button = sprintf(
             '<button type="button" class="ptc-open-modal-button button button-primary" data-order-id="%d">Send To Pathao</button>',
             $order_id
         );
 
-        if (!empty($consignment_id)) {
-            if (defined('PTC_EMPTY_FLAG') && $consignment_id !== PTC_EMPTY_FLAG) {
-                $url = trailingslashit(get_ptc_merchant_panel_base_url()) . 'courier/orders/' . urlencode($consignment_id);
+        // CASE 1: Already has a valid consignment ID → Show link
+        if (!empty($consignment_id) && (!defined('PTC_EMPTY_FLAG') || $consignment_id !== PTC_EMPTY_FLAG)) {
 
-                echo sprintf(
-                    '<a href="%s" class="order-view" target="_blank">%s</a>',
-                    esc_url($url),
-                    esc_html($consignment_id)
-                );
-                return;
-            }
+            $url = trailingslashit(get_ptc_merchant_panel_base_url()) 
+                . 'courier/orders/' 
+                . urlencode($consignment_id);
 
+            echo sprintf(
+                '<a href="%s" class="order-view" target="_blank">%s</a>',
+                esc_url($url),
+                esc_html($consignment_id)
+            );
+
+            return;
+        }
+
+        // CASE 2: Consignment ID exists but equals EMPTY FLAG → show ---
+        if (!empty($consignment_id) && defined('PTC_EMPTY_FLAG') && $consignment_id === PTC_EMPTY_FLAG) {
             echo esc_html('---');
             return;
         }
 
+        // CASE 3: No consignment ID → show button
         echo '<span class="ptc-assign-area">' . $button . '</span>';
     }
+
 
     public function store_log_after_creation($res)
     {

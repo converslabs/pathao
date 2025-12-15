@@ -1,7 +1,9 @@
 jQuery(document).ready(function ($) {
     console.log("popup.js ready");
 
-    // Open modal
+    /* -----------------------------------------------------------
+     * OPEN / CLOSE MODAL
+     * ----------------------------------------------------------- */
     function openPathaoModal(orderId) {
         console.log("Opening modal for Order:", orderId);
 
@@ -16,7 +18,7 @@ jQuery(document).ready(function ($) {
         $("#ptc-modal").fadeOut();
     }
 
-    // Button click → open modal
+    // Open modal from button
     $(document).on("click", ".ptc-open-modal-button", function () {
         const orderId = $(this).data("order-id");
         openPathaoModal(orderId);
@@ -28,7 +30,7 @@ jQuery(document).ready(function ($) {
     });
 
     /* -----------------------------------------------------------
-     * LOAD ORDER DETAILS INTO FORM
+     * LOAD ORDER DETAILS
      * ----------------------------------------------------------- */
     function loadOrderData(orderId) {
         $.ajax({
@@ -53,7 +55,7 @@ jQuery(document).ready(function ($) {
                 $("#ptc-collectable").val(res.cod_amount);
 
                 $("#ptc-store").val(res.store_name);
-            }
+            },
         });
     }
 
@@ -75,17 +77,18 @@ jQuery(document).ready(function ($) {
                 console.log("Cities:", res);
 
                 res.cities.forEach(function (city) {
-                    $city.append(`<option value="${city.id}">${city.name}</option>`);
+                    $city.append(
+                        `<option value="${city.id}">${city.name}</option>`
+                    );
                 });
 
-                // Auto-load zones when city changes
                 $city.trigger("change");
-            }
+            },
         });
     }
 
     /* -----------------------------------------------------------
-     * WHEN CITY SELECTED → LOAD ZONES
+     * CITY → ZONES
      * ----------------------------------------------------------- */
     $("#ptc-city").on("change", function () {
         const cityId = $(this).val();
@@ -107,16 +110,18 @@ jQuery(document).ready(function ($) {
                 console.log("Zones:", res);
 
                 res.zones.forEach(function (zone) {
-                    $zone.append(`<option value="${zone.id}">${zone.name}</option>`);
+                    $zone.append(
+                        `<option value="${zone.id}">${zone.name}</option>`
+                    );
                 });
 
                 $zone.trigger("change");
-            }
+            },
         });
     });
 
     /* -----------------------------------------------------------
-     * WHEN ZONE SELECTED → LOAD AREAS
+     * ZONE → AREAS
      * ----------------------------------------------------------- */
     $("#ptc-zone").on("change", function () {
         const zoneId = $(this).val();
@@ -138,20 +143,21 @@ jQuery(document).ready(function ($) {
                 console.log("Areas:", res);
 
                 res.areas.forEach(function (area) {
-                    $area.append(`<option value="${area.id}">${area.name}</option>`);
+                    $area.append(
+                        `<option value="${area.id}">${area.name}</option>`
+                    );
                 });
-            }
+            },
         });
     });
 
     /* -----------------------------------------------------------
-     * SEND FORM TO PATHAO
+     * SEND ORDER TO PATHAO
      * ----------------------------------------------------------- */
     $(document).on("click", "#ptc-send-confirm", function () {
         const orderId = $(this).data("order-id");
-
-        // collect form fields
         const formData = $("#ptc-pathao-form").serialize();
+
         $.ajax({
             url: ajaxurl,
             method: "POST",
@@ -162,17 +168,27 @@ jQuery(document).ready(function ($) {
                 form: formData,
             },
             success: function (res) {
+                console.log("Hi, Pathao Response:", res);
+
                 if (res.success) {
-                    alert("Order successfully sent to Pathao!");
+                    const p = res.data.raw; // ← Pathao API response
+
+                    const msg = p.message;
+                    const consignment = p.data?.consignment_id;
+                    const merchant = p.data?.merchant_order_id;
+                    const status = p.data?.order_status;
+                    const fee = p.data?.delivery_fee; 
                 } else {
-                   alert("Failed: " + JSON.stringify(res.data)); 
-                } 
+                    alert("Failed: " + JSON.stringify(res.data));
+                }
+
                 closePathaoModal();
             },
+
             error: function (err) {
                 console.log(err);
                 alert("Server error sending to Pathao.");
-            }
+            },
         });
     });
 });
