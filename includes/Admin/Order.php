@@ -69,7 +69,7 @@ class Order
 
     public function add_custom_columns($columns)
     {
-        $columns['sdevs_pathao_order_column'] = __('xx Pathao', 'integration-of-pathao-for-woocommerce');
+        $columns['sdevs_pathao_order_column'] = __('Pathao', 'integration-of-pathao-for-woocommerce');
         return $columns;
     }
 
