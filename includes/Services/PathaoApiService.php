@@ -24,9 +24,7 @@ class PathaoApiService
     private function ensure_access_token()
     {
         $token = get_option('pathao_access_token');
-
         if (!$token) {
-            error_log("[Pathao Debug] No access token found — refreshing...");
             $new = $this->refresh_tokens();
             if ($new && $new->success) {
                 update_option('pathao_access_token', $new->data->access_token);
@@ -47,7 +45,6 @@ class PathaoApiService
         $token = $this->ensure_access_token();
 
         if (!$token) {
-            error_log("[Pathao Debug] TOKEN ERROR: cannot refresh token");
             return ['error' => 'token_missing'];
         }
 
@@ -65,7 +62,6 @@ class PathaoApiService
 
         // Pathao expired token → 401
         if (wp_remote_retrieve_response_code($response) === 401) {
-            error_log("[Pathao Debug] 401 detected — refreshing token");
 
             $new = $this->refresh_tokens();
             if ($new && $new->success) {
@@ -145,20 +141,17 @@ class PathaoApiService
         $transient_key = '_sdevs_pathao_cities';
 
         if ($cached = $this->has_transient($transient_key)) {
-            error_log("[Pathao Debug] get_cities(): Using cached");
             return $cached;
         }
 
         $res = $this->request('wp_remote_get', 'aladdin/api/v1/cities');
 
         if ($err = $this->has_errors($res)) {
-            error_log("[Pathao Debug] /cities ERROR: " . print_r($err, true));
             return $err;
         }
 
         $body = json_decode(wp_remote_retrieve_body($res));
 
-        error_log("[Pathao Debug] /cities RAW: " . json_encode($body));
 
         if (!isset($body->data->data)) {
             return (object)[
@@ -252,20 +245,17 @@ class PathaoApiService
         $key = '_pathao_store_id';
 
         if ($c = $this->has_transient($key)) {
-            error_log("[Pathao Debug] get_stores(): Using cached");
             return $c;
         }
 
         $res = $this->request('wp_remote_get', 'aladdin/api/v1/stores');
 
         if ($err = $this->has_errors($res)) {
-            error_log("[Pathao Debug] Stores ERROR: " . print_r($err, true));
             return $err;
         }
 
         $body = json_decode(wp_remote_retrieve_body($res));
 
-        error_log("[Pathao Debug] /stores RAW: " . json_encode($body));
 
         if (!isset($body->data->data) || !is_array($body->data->data)) {
             return (object)[
@@ -282,7 +272,6 @@ class PathaoApiService
             ];
         }
 
-        error_log("[Pathao Debug] Parsed Stores: " . print_r($list, true));
 
         set_transient($key, $list, 5 * MINUTE_IN_SECONDS);
 
@@ -328,8 +317,6 @@ class PathaoApiService
     ------------------------------------------*/
     public function send_order(int $order_id): stdClass
     {
-        error_log("-----------------------------------------------------------");
-        error_log("[Pathao Debug] send_order(): ORDER ID {$order_id}");
 
         if (!function_exists('wc_get_order')) {
             return (object)['success' => false, 'messages' => ['WooCommerce missing']];
@@ -371,21 +358,17 @@ class PathaoApiService
                 : 0,
         ];
 
-        error_log("[Pathao Debug] Constructed PAYLOAD: " . json_encode($payload));
         /* Validate */
         $validate = $this->validate_order_payload($payload);
         if ($validate !== true) {
-            error_log("[Pathao Debug] PAYLOAD FAILED: {$validate}");
             return (object)['success' => false, 'messages' => [$validate]];
         }
 
-        error_log("[Pathao Debug] PAYLOAD OK: " . json_encode($payload));
 
 
         /* Validate */
         $validate = $this->validate_order_payload($payload);
         if ($validate !== true) {
-            error_log("[Pathao Debug] PAYLOAD FAILED: {$validate}");
             return (object)['success' => false, 'messages' => [$validate]];
         }
 
@@ -397,13 +380,11 @@ class PathaoApiService
         );
 
         if ($err = $this->has_errors($res)) {
-            // error_log("[Pathao Debug] API ERR: " . print_r($err, true));
             return $err;
         }
 
         $body = json_decode(wp_remote_retrieve_body($res));
 
-        error_log("[Pathao Debug] AORDER RESPONSE: " . json_encode($body));
 
         return (object)['success' => true, 'data' => $body];
     }

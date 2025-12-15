@@ -1,12 +1,8 @@
-jQuery(document).ready(function ($) {
-    console.log("popup.js ready");
-
+jQuery(document).ready(function ($) { 
     /* -----------------------------------------------------------
      * OPEN / CLOSE MODAL
      * ----------------------------------------------------------- */
-    function openPathaoModal(orderId) {
-        console.log("Opening modal for Order:", orderId);
-
+    function openPathaoModal(orderId) { 
         $("#ptc-modal").fadeIn();
         $("#ptc-send-confirm").data("order-id", orderId);
 
@@ -40,9 +36,7 @@ jQuery(document).ready(function ($) {
                 action: "get_wc_order_info",
                 order_id: orderId,
             },
-            success: function (res) {
-                console.log("Order info loaded:", res);
-
+            success: function (res) { 
                 $("#ptc-name").val(res.name);
                 $("#ptc-phone").val(res.phone);
                 $("#ptc-address").val(res.address);
@@ -72,10 +66,7 @@ jQuery(document).ready(function ($) {
             },
             success: function (res) {
                 const $city = $("#ptc-city");
-                $city.empty();
-
-                console.log("Cities:", res);
-
+                $city.empty();  
                 res.cities.forEach(function (city) {
                     $city.append(
                         `<option value="${city.id}">${city.name}</option>`
@@ -105,10 +96,7 @@ jQuery(document).ready(function ($) {
             },
             success: function (res) {
                 const $zone = $("#ptc-zone");
-                $zone.empty();
-
-                console.log("Zones:", res);
-
+                $zone.empty();  
                 res.zones.forEach(function (zone) {
                     $zone.append(
                         `<option value="${zone.id}">${zone.name}</option>`
@@ -138,10 +126,7 @@ jQuery(document).ready(function ($) {
             },
             success: function (res) {
                 const $area = $("#ptc-area");
-                $area.empty();
-
-                console.log("Areas:", res);
-
+                $area.empty(); 
                 res.areas.forEach(function (area) {
                     $area.append(
                         `<option value="${area.id}">${area.name}</option>`
@@ -171,7 +156,7 @@ jQuery(document).ready(function ($) {
                 console.log("Hi, Pathao Response:", res);
 
                 if (res.success) {
-                    const p = res.data.raw; // ← Pathao API response
+                    const p = res.data.raw; 
 
                     const msg = p.message;
                     const consignment = p.data?.consignment_id;
@@ -186,8 +171,7 @@ jQuery(document).ready(function ($) {
             },
 
             error: function (err) {
-                console.log(err);
-                alert("Server error sending to Pathao.");
+                console.log(err); 
             },
         });
     });

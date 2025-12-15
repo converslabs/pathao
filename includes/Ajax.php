@@ -88,9 +88,7 @@ class Ajax
 	 * @return void
 	 */
 	public function get_cities()
-	{
-		error_log("[Pathao Debug] get_cities ajax called");
-
+	{  
 		$order_id = sanitize_text_field(wp_unslash($_POST['order_id']));
 		$cities   = PathaoAPI::get_cities();
 
@@ -109,8 +107,6 @@ class Ajax
 	 */
 	public function setup_pathao()
 	{
-		error_log("[Pathao Debug] setup_pathao ajax called");
-
 		if (! isset($_POST['client_id'], $_POST['client_secret'], $_POST['client_username'], $_POST['_wpnonce'], $_POST['client_password'], $_POST['sandbox_mode']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), '_pathao_setup_nonce') || ! current_user_can('manage_options')) {
 			return;
 		}
@@ -144,14 +140,6 @@ class Ajax
 		// $raw_sandbox = isset($_POST['sandbox_mode']) ? (bool) sanitize_text_field(wp_unslash($_POST['sandbox_mode'])) : false;
 		$raw_sandbox = false;
 
-		error_log('Pathao json setup form submitted: ' . wp_json_encode(array(
-			'client_id' => $client_id,
-			'client_secret_masked' => $masked_secret,
-			'username' => $data['username'],
-			'password_masked' => $masked_password,
-			'sandbox_mode_raw' => $raw_sandbox,
-		)));
-
 		update_option('pathao_sandbox_mode', 'true' === $_POST['sandbox_mode'] ? true : false);
 
 		$res = PathaoAPI::generate_tokens($data);
@@ -170,7 +158,6 @@ class Ajax
 			);
 		}
 		wp_send_json($res);
-		error_log('[Pathao Debug] Token Response: ' . print_r($res, true));
 	}
 
 	/**
@@ -180,7 +167,6 @@ class Ajax
 	 */
 	public function get_city_zones()
 	{
-		error_log("[Pathao Debug] get_city_zones ajax called");
 		if (! isset($_POST['nonce'], $_POST['order_id'], $_POST['city']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'pathao_send_order')) {
 			return;
 		}
@@ -206,7 +192,6 @@ class Ajax
 	 */
 	public function get_zone_areas()
 	{
-		error_log("[Pathao Debug] get_zone_areas ajax called");
 		if (! isset($_POST['nonce'], $_POST['order_id'], $_POST['zone']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'pathao_send_order')) {
 			return;
 		}
@@ -287,7 +272,6 @@ class Ajax
 		}
 
 		$order = wc_get_order($order_id);
-		error_log("[Pathao Debug] send_order_to_pathao called for order ID: {$order}");
 
 		if (! $order) {
 			if (defined('DOING_AJAX') && DOING_AJAX) {
@@ -296,10 +280,7 @@ class Ajax
 			return false;
 		}
 
-		// Use saved store id and not hardcoded
-		// $store_id = pathao_store_id() ?: get_option('pathao_store_id');
 		$store_id = pathao_store_id();
-        error_log("[Pathao Debug] Ajax Using Store ID: {$store_id}");
 
 		if (! $store_id) {
 			if (defined('DOING_AJAX') && DOING_AJAX) {
@@ -344,7 +325,6 @@ class Ajax
 		if (method_exists(PathaoAPI::class, 'send_order')) {
 			// PathaoAPI::send_order should handle token and request JSON encoding
 			$res = PathaoAPI::send_order($order_id, $args);
-			error_log("[Pathao Debug] PathaoAPI::send_order response: " . print_r($res, true));
 		} else {
 			// Fallback: call the service directly (mirror of PathaoApiService::send_order)
 			$service = new \SpringDevs\Pathao\Services\PathaoApiService();
