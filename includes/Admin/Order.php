@@ -22,26 +22,9 @@ class Order
         add_action('init', array($this, 'load_hpos_hooks'));
 
         // Load popup at admin footer
-        add_action('admin_footer', array($this, 'load_pathao_popup_view'));
-        add_action('admin_menu', array($this, 'pathao_order_submenu'));
+        add_action('admin_footer', array($this, 'load_pathao_popup_view')); 
     }
-
-
-    public function pathao_order_submenu() {  
-        add_menu_page(
-            'Pathao Orders Page Title',      
-            'Pathao Orders',          
-            'manage_options',           
-            'pathao-orders-menu-slug',    
-            array($this, 'pathao_orders_menu_content'),
-            'dashicons-cart',               
-            22     
-        );
-    } 
-     
-    function pathao_orders_menu_content() { 
-        echo '<h3>Welcome to Pathao Orders Menu</h3>'; 
-    }
+    
 
     /**
      * Load popup modal HTML from admin-popup.php
