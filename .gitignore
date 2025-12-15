@@ -54,6 +54,7 @@ testem.log
 # OS generated files #
 ######################
 
+.vscode
 .DS_Store
 .DS_Store?
 ._*
