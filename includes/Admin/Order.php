@@ -229,19 +229,22 @@ class Order
         $button = sprintf(
             '<button class="button button-primary ptc-open-modal-button" data-order-id="%d">Send To Pathao</button>',
             $order_id
-        );
-
-        // CASE 1: Valid consignment ID → show link
+        ); 
+      
         if (!empty($consignment_id)) {
-            $url = trailingslashit(get_ptc_merchant_panel_base_url()) . 'courier/orders/' . urlencode($consignment_id);
+
+            // Base URL MUST be in quotes
+            $url = 'https://merchant.pathao.com/' . 'courier/orders/' . urlencode($consignment_id);
 
             echo sprintf(
                 '<a href="%s" class="order-view" target="_blank">%s</a>',
                 esc_url($url),
                 esc_html($consignment_id)
             );
+
             return;
         }
+
 
         // CASE 2: No consignment ID → show button
         echo '<span class="ptc-assign-area">' . $button . '</span>';
