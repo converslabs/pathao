@@ -89,7 +89,6 @@ Sometimes, especially when new versions are released, it might only require some
 * **refactor:** cleaned up Ajax handler structure for send_order_to_pathao with clearer order loading and payload building.
 * **refactor:** apply API call flow to properly fallback to PathaoApiService when facades are unavailable.
 * **security:** added stronger nonce verification and bailout conditions in all AJAX endpoints to block invalid requests.
- 
 
 = 1.1 =
 * **New:** Pathao column on order list.
