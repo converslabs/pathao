@@ -1,15 +1,16 @@
 === Pathao Integration for WooCommerce ===
-Contributors: springdevs, naminbd, ok9xnirab
+Contributors: converswp, shamsbd71
 Donate link: http://springdevs.com/
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
-Tested up to: 6.6
-Stable tag: trunk
+Tested up to: 6.9
+Stable tag: 1.2
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Pathao courier integration for WooCommerce
+
 
 == Description ==
 
@@ -79,6 +80,16 @@ Sometimes, especially when new versions are released, it might only require some
 4.  Pathao order status
 
 == Changelog ==
+ 
+= version 1.1.1 =
+* **feature:**  Pathao Shipping Integration for WooCommerce.
+* **fix:** add translation and sanitization.
+* **remove:** previous Code.
+* **Improve:** loading and performance.
+* **refactor:** cleaned up Ajax handler structure for send_order_to_pathao with clearer order loading and payload building.
+* **refactor:** apply API call flow to properly fallback to PathaoApiService when facades are unavailable.
+* **security:** added stronger nonce verification and bailout conditions in all AJAX endpoints to block invalid requests.
+ 
 
 = 1.1 =
 * **New:** Pathao column on order list.
