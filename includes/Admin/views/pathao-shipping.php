@@ -4,16 +4,16 @@
 
 <div class="sdevs_sidebar_form">
 	<?php wp_nonce_field( 'pathao_send_order', 'pathao_send_order_nonce' ); ?>
- <input type="hidden" value="<?php echo esc_html( $order_id ); ?>" id="pathao_order_id">
+	<input type="hidden" value="<?php echo esc_html( $order_id ); ?>" id="pathao_order_id">
 	<p class="form-field">
 		<label for="pathao_delivery_type">
- <b>Delivery Type</b>
-	 	<abbr class="required" title="required">*</abbr>
+			<b>Delivery Type</b>
+			<abbr class="required" title="required">*</abbr>
 		</label>
 		<select style="width: 100%;" name="pathao_delivery_type" id="pathao_delivery_type">
- <option value="48">Normal Delivery</option>
- <option value="12">On-demand Delivery</option>
- </select>
+			<option value="48">Normal Delivery</option>
+			<option value="12">On-demand Delivery</option>
+		</select>
 	</p>
 	<p class="form-field">
 		<label for="pathao_item_type">

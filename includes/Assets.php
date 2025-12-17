@@ -1,98 +1,122 @@
 <?php
+/**
+ * Scripts and Styles Class.
+ *
+ * @package SpringDevs\Pathao\Assets
+ */
 
 namespace SpringDevs\Pathao;
 
+/**
+ * Scripts and Styles Class
+ */
 class Assets {
 
-    public function __construct() {
-        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
-    }
+	/**
+	 * Assets constructor.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function __construct() {
+		if ( is_admin() ) {
+			add_action( 'admin_enqueue_scripts', array( $this, 'register' ), 5 );
+		} else {
+			add_action( 'wp_enqueue_scripts', array( $this, 'register' ), 5 );
+		}
+	}
 
-    public function get_scripts() { 
+	/**
+	 * Register our app scripts and styles
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register() {
+		$this->register_scripts( $this->get_scripts() );
+		$this->register_styles( $this->get_styles() );
+	}
 
-        $plugin_js_assets_path = SDEVS_PATHAO_ASSETS . '/js/';
+	/**
+	 * Register scripts
+	 *
+	 * @param array $scripts
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	private function register_scripts( $scripts ) {
+		foreach ( $scripts as $handle => $script ) {
+			$deps      = $script['deps'] ?? false;
+			$in_footer = $script['in_footer'] ?? false;
+			$version   = $script['version'] ?? SDEVS_PATHAO_VERSION;
 
-        return [
-            'pathao_toast_script' => [
-                'src'       => $plugin_js_assets_path . 'jquery.toast.min.js',
-                'deps'      => ['jquery'],
-                'in_footer' => true,
-            ],
-            'pathao_admin_script' => [
-                'src'       => $plugin_js_assets_path . 'admin.js',
-                'deps'      => ['jquery'],
-                'in_footer' => true,
-            ],
-            'pathao_popup_script' => [
-                'src'       => $plugin_js_assets_path . 'popup.js',
-                'deps'      => ['jquery'],
-                'in_footer' => true,
-            ],
-        ];
-    }
+			wp_register_script( $handle, $script['src'], $deps, $version, $in_footer );
+		}
+	}
 
-    public function get_styles() {
-        $plugin_css_assets_path = SDEVS_PATHAO_ASSETS . '/css/';
+	/**
+	 * Register styles
+	 *
+	 * @param array $styles
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public function register_styles( $styles ) {
+		foreach ( $styles as $handle => $style ) {
+			$deps = $style['deps'] ?? false;
 
-        return [
-            'pathao_toast_styles' => [
-                'src' => $plugin_css_assets_path . 'jquery.toast.min.css',
-            ],
-            'pathao_styles' => [
-                'src' => $plugin_css_assets_path . 'style.css',
-            ],
-        ];
-    }
+			wp_register_style( $handle, $style['src'], $deps, SDEVS_PATHAO_VERSION );
+		}
+	}
 
-    public function register_scripts() {
-        foreach ($this->get_scripts() as $handle => $script) { 
-            wp_register_script(
-                $handle,
-                $script['src'],
-                $script['deps'],
-                SDEVS_PATHAO_VERSION,
-                $script['in_footer']
-            );
-        }
-    }
+	/**
+	 * Get all registered scripts
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	public function get_scripts() {
+		$plugin_js_assets_path = SDEVS_PATHAO_ASSETS . '/js/';
 
-    public function register_styles() {
-        foreach ($this->get_styles() as $handle => $style) {
-            wp_register_style(
-                $handle,
-                $style['src'],
-                isset($style['deps']) ? $style['deps'] : [],
-                SDEVS_PATHAO_VERSION
-            );
-        }
-    }
+		$scripts = array(
+			'pathao_toast_script' => array(
+				'src'       => $plugin_js_assets_path . 'jquery.toast.min.js',
+				'deps'      => array( 'jquery' ),
+				'in_footer' => true,
+			),
+			'pathao_admin_script' => array(
+				'src'       => $plugin_js_assets_path . 'admin.js',
+				'deps'      => array( 'jquery', 'pathao_toast_script' ),
+				'in_footer' => true,
+			),
+		);
 
-    public function enqueue_admin_assets() {
-        $screen = get_current_screen();
+		return $scripts;
+	}
 
-        // 🔧 TEMP: Disable screen check so assets load everywhere
-        // if (!$screen || $screen->id !== 'edit-shop_order') {
-        //     return;
-        // }
-  
-        // Register
-        $this->register_scripts();
-        $this->register_styles();
+	/**
+	 * Get registered styles
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return array
+	 */
+	public function get_styles() {
+		$plugin_css_assets_path = SDEVS_PATHAO_ASSETS . '/css/';
 
-        // Enqueue scripts
-        foreach ($this->get_scripts() as $handle => $script) {
-            wp_enqueue_script($handle);
-        }
+		$styles = array(
+			'pathao_toast_styles' => array(
+				'src' => $plugin_css_assets_path . 'jquery.toast.min.css',
+			),
+		);
 
-        wp_localize_script('pathao_popup_script', 'PTC_AJAX', [
-            'ajax_url' => admin_url('admin-ajax.php')
-        ]);
-
-        // Enqueue styles
-        foreach ($this->get_styles() as $handle => $style) {
-            wp_enqueue_style($handle);
-        }
-    }
-
-
+		return $styles;
+	}
 }

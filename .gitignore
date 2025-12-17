@@ -1,40 +1,47 @@
-# Scripts
 plugin-deploy.sh
 export.sh
-
-# Secrets
+nbproject
+node_modules
+build
 secret.json
-
-# Project folders
-nbproject/
-node_modules/
-bower_components/
-vendor/
-build/
-dist/
-tmp/
-coverage/
-
-# IDEs & editors
-.idea/
-.vscode/
-.sass-cache/
-
-# Logs
-*.log
 log.txt
+
+# Compiled output #
+###################
+/dist
+/tmp
+/build
+
+# Dependencies #
+###################
+/node_modules
+/bower_components
+/vendor
+
+# Misc #
+###################
+.idea
+config.codekit
+/.sass-cache
+/connect.lock
+/coverage/*
+/libpeerconnection.log
 npm-debug.log
 testem.log
-libpeerconnection.log
 
-# Compiled binaries
+# Compiled source #
+###################
+*.com
 *.class
 *.dll
 *.exe
 *.o
 *.so
 
-# Packages
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
 *.7z
 *.dmg
 *.gz
@@ -44,7 +51,8 @@ libpeerconnection.log
 *.tar
 *.zip
 
-# OS generated files
+# OS generated files #
+######################
 .DS_Store
 .DS_Store?
 ._*
@@ -53,10 +61,8 @@ libpeerconnection.log
 ehthumbs.db
 Thumbs.db
 
-# Databases
+# Logs and databases #
+######################
+*.log
 *.sql
 *.sqlite
-
-# Misc
-connect.lock
-config.codekit

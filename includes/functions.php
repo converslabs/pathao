@@ -32,7 +32,7 @@ function is_pathao_shipping_enabled(): bool {
 /**
  * Get current store ID.
  */
-function pathao_store_id() {
+function sdevs_pathao_store_id() {
 	$settings = get_option( 'woocommerce_pathao_settings' );
 
 	if ( $settings && isset( $settings['store'] ) ) {

@@ -16,9 +16,6 @@ use SpringDevs\Pathao\Services\PathaoApiService;
  * @method static \StdClass generate_tokens(array $args)
  * @method static \StdClass refresh_tokens()
  */
-
-// I'll add temporary, careful request/response logging inside generate_tokens() (masking client_secret/password) so we can see the API response details — then I'll update the todo list.
-
 class PathaoAPI {
 
 	/**
