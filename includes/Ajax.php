@@ -32,8 +32,8 @@ class Ajax
 		add_action('wp_ajax_nopriv_get_cities', [$this, 'get_cities']);
 		add_action('wp_ajax_get_cities', [$this, 'get_cities']);
 
-		add_action('wp_ajax_nopriv_get_city_zones', [$this, 'get_city_zones']);
-		add_action('wp_ajax_get_city_zones', [$this, 'get_city_zones']);
+		// add_action('wp_ajax_nopriv_get_city_zones', [$this, 'get_city_zones']);
+		// add_action('wp_ajax_get_city_zones', [$this, 'get_city_zones']);
 
 		add_action('wp_ajax_nopriv_get_zone_areas', [$this, 'get_zone_areas']);
 		add_action('wp_ajax_get_zone_areas', [$this, 'get_zone_areas']);
@@ -48,10 +48,7 @@ class Ajax
 	public function sncue_admin($hook)
 	{
 
-		// Check if we are on ANY WooCommerce order page
-		$screen = get_current_screen();
-		if ($screen && $screen->post_type === 'shop_order') {
-
+		// Check if we are on ANY WooCommerce order pag
 			wp_enqueue_script(
 				'pathao-popup',
 				plugin_dir_url(__FILE__) . 'assets/js/popup.js',
@@ -64,7 +61,7 @@ class Ajax
 				'ajax_url' => admin_url('admin-ajax.php'),
 				'nonce'    => wp_create_nonce('pathao_send_order'),
 			]);
-		}
+		
 
 		// Load admin.js ONLY on Pathao settings
 		if ($hook === 'toplevel_page_pathao') {
@@ -89,15 +86,23 @@ class Ajax
 	 */
 	public function get_cities()
 	{  
-		$order_id = sanitize_text_field(wp_unslash($_POST['order_id']));
-		$cities   = PathaoAPI::get_cities();
+		if ( ! isset($_POST['order_id']) ) {
+		wp_send_json_error(['message' => 'Missing order_id']);
+		}
 
-		wp_send_json(
-			array(
-				'cities' => $cities->data,
+		$order_id = sanitize_text_field(wp_unslash($_POST['order_id']));
+
+		$response = PathaoAPI::get_cities();
+
+
+		$cities = [];
+		if (is_object($response) && isset($response->success) && $response->success && isset($response->data)) {
+			$cities = $response->data;
+		} 
+		wp_send_json([
+				'cities' => $cities,
 				'value'  => apply_filters('pathao_selected_order_city_value', null, $order_id),
-			)
-		);
+		]);
 	}
 
 	/**
@@ -356,6 +361,8 @@ class Ajax
 		}
 
 		if (isset($result->data->order_status)) {
+			error_log("hello_result:",$result);
+
 			$order_status = sanitize_text_field($result['data']['order_status']);
 		} elseif (is_object($res) && isset($res->data->order_status)) {
 			$order_status = sanitize_text_field($res->data->order_status);

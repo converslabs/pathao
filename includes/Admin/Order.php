@@ -42,7 +42,7 @@ class Order
 
     public function pathao_orders_menu_content()
     {
-?>
+      ?>
         <div class="wrap">
             <h1 class="wp-heading-inline">Pathao Courier Order Page</h1>
             <p class="description">Manage your deliveries without any distraction</p>
@@ -88,97 +88,121 @@ class Order
 
             <?php $this->render_pathao_orders_table(); ?>
         </div>
-<?php
+      <?php
     }
 
-    private function render_pathao_orders_table()
-    {
+    private function render_pathao_orders_table() {
+
         $per_page = absint($_GET['per_page'] ?? 20);
 
         $args = [
-            'limit' => $per_page,
+            'limit'   => $per_page,
             'orderby' => 'date',
-            'order' => 'DESC',
+            'order'   => 'DESC',
         ];
 
+        /* -------------------------
+        * SEARCH FIX (IMPORTANT)
+        * ------------------------- */
         if (!empty($_GET['s'])) {
-            $args['search'] = sanitize_text_field($_GET['s']);
+            $search = sanitize_text_field($_GET['s']);
+
+            // If numeric → assume Order ID
+            if (is_numeric($search)) {
+                $args['include'] = [(int) $search];
+            } else {
+                // Search Pathao Consignment ID (meta)
+                $args['meta_query'] = [
+                    [
+                        'key'     => '_pathao_consignment_id',
+                        'value'   => $search,
+                        'compare' => 'LIKE',
+                    ]
+                ];
+            }
         }
 
-        if (!empty($_GET['from_date']) || !empty($_GET['to_date'])) {
-            $args['date_created'] = [];
+        /* -------------------------
+        * DATE FILTER
+        * ------------------------- */
+        $from = !empty($_GET['from_date']) ? sanitize_text_field($_GET['from_date']) : '';
+        $to   = !empty($_GET['to_date'])   ? sanitize_text_field($_GET['to_date'])   : '';
 
-            if (!empty($_GET['from_date'])) {
-                $args['date_created']['after'] = sanitize_text_field($_GET['from_date']);
-            }
-
-            if (!empty($_GET['to_date'])) {
-                $args['date_created']['before'] = sanitize_text_field($_GET['to_date']);
-            }
+        if ($from && $to) {
+            $args['date_created'] = $from . '...' . $to;
+        } elseif ($from) {
+            $args['date_created'] = '>=' . $from;
+        } elseif ($to) {
+            $args['date_created'] = '<=' . $to;
         }
 
         $orders = wc_get_orders($args);
-?>
+        ?>
+
         <table class="wp-list-table widefat fixed striped">
             <thead>
-                <tr>
-                    <th><input type="checkbox"></th>
-                    <th>Order</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                    <th>Pathao Courier</th>
-                    <th>Pathao Status</th>
-                    <th>Delivery Fee</th>
-                </tr>
+            <tr>
+                <th></th>
+                <th>Order</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Pathao Courier</th>
+                <th>Pathao Status</th>
+                <th>Delivery Fee</th>
+            </tr>
             </thead>
 
             <tbody>
-                <?php if ($orders) : ?>
-                    <?php foreach ($orders as $order) :
+            <?php if ($orders) : foreach ($orders as $order) :
 
-                        $consignment_id = $order->get_meta('_pathao_consignment_id');
-                        $pathao_status = $order->get_meta('_pathao_order_status');
-                        $delivery_fee = $order->get_meta('_pathao_delivery_fee');
-                    ?>
-                        <tr>
-                            <td><input type="checkbox"></td>
+                $consignment_id = $order->get_meta('_pathao_consignment_id');
+                $pathao_status  = $order->get_meta('_pathao_order_status');
+                $delivery_fee  = $order->get_meta('_pathao_delivery_fee');
+            ?>
+                <tr>
+                    <td></td>
 
-                            <td>
-                                <a href="<?php echo esc_url(get_edit_post_link($order->get_id())); ?>">
-                                    #<?php echo esc_html($order->get_id()); ?>
-                                </a>
-                            </td>
+                    <td>
+                        <a href="<?php echo esc_url(get_edit_post_link($order->get_id())); ?>">
+                            #<?php echo esc_html($order->get_id()); ?>
+                        </a>
+                    </td>
 
-                            <td><?php echo esc_html($order->get_date_created()->date('F jS, Y')); ?></td>
-                            <td><?php echo esc_html(wc_get_order_status_name($order->get_status())); ?></td>
-                            <td><?php echo wp_kses_post($order->get_formatted_order_total()); ?></td>
+                    <td><?php echo esc_html($order->get_date_created()->date('F jS, Y')); ?></td>
+                    <td><?php echo esc_html(wc_get_order_status_name($order->get_status())); ?></td>
+                    <td><?php echo wp_kses_post($order->get_formatted_order_total()); ?></td>
 
-                            <td>
-                                <?php if ($consignment_id) : ?>
-                                    <?php echo esc_html($consignment_id); ?>
-                                <?php else : ?>
-                                    <button class="button button-primary ptc-open-modal-button"
-                                            data-order-id="<?php echo esc_attr($order->get_id()); ?>">
-                                        Send To Pathao
-                                    </button>
-                                <?php endif; ?>
-                            </td>
+                    <td>
+                        <?php if ($consignment_id) : 
+                            //  error_log( 'xxconsignment_id: ' . print_r( $consignment_id, true ) ); 
+                            ?>
 
-                            <td><?php echo esc_html($pathao_status ?: '—'); ?></td>
-                            <td><?php echo esc_html($delivery_fee ?: '—'); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else : ?>
-                    <tr>
-                        <td colspan="8">No orders found.</td>
-                    </tr>
-                <?php endif; ?>
+                            <?php echo esc_html($consignment_id); ?>
+                        <?php else : ?>
+                            <button
+                                class="button button-primary ptc-open-modal-button"
+                                data-order-id="<?php echo esc_attr($order->get_id()); ?>">
+                                Send To Pathao
+                            </button>
+                        <?php endif; ?>
+                    </td>
+
+                    <td><?php echo esc_html($pathao_status ?: '—'); ?></td>
+                    <td><?php echo esc_html($delivery_fee ?: '—'); ?></td>
+                </tr>
+
+            <?php endforeach; else : ?>
+                <tr>
+                    <td colspan="8">No orders found.</td>
+                </tr>
+            <?php endif; ?>
             </tbody>
         </table>
-
-<?php
+    <?php
     }
+
+
 
     public function load_pathao_popup_view()
     {
@@ -201,78 +225,97 @@ class Order
         );
     }
 
-    public function add_custom_columns($columns)
-    {
-        $columns['sdevs_pathao_order_column'] = __('Pathao', 'integration-of-pathao-for-woocommerce');
-        return $columns;
-    }
+    public function add_custom_columns_data( $column, $order ) {
 
-    public function add_custom_columns_data($column, $order)
-    {
-        if ($column !== 'sdevs_pathao_order_column') {
+        if ( $column !== 'sdevs_pathao_order_column' ) {
             return;
         }
 
-        if ($order instanceof WC_Order) {
+        // Normalize order object
+        if ( $order instanceof WC_Order ) {
             $order_obj = $order;
         } else {
-            $order_obj = wc_get_order(absint($order));
-            if (!$order_obj) {
+            $order_obj = wc_get_order( absint( $order ) );
+            if ( ! $order_obj ) {
                 echo 'N/A';
                 return;
             }
         }
 
-        $order_id = $order_obj->get_id();
-        $consignment_id = trim($order_obj->get_meta('_pathao_consignment_id'));
+        $order_id        = $order_obj->get_id();
+        $consignment_id  = trim( (string) $order_obj->get_meta( '_pathao_consignment_id' ) );
 
-        $button = sprintf(
-            '<button class="button button-primary ptc-open-modal-button" data-order-id="%d">Send To Pathao</button>',
-            $order_id
-        ); 
-      
-        if (!empty($consignment_id)) {
+        // ✅ Debug log
+        error_log( '[Pathao] consignment_id = ' . print_r( $consignment_id, true ) );
 
-            // Base URL MUST be in quotes
-            $url = 'https://merchant.pathao.com/' . 'courier/orders/' . urlencode($consignment_id);
+        // ✅ IF consignment exists → show link
+        if ( ! empty( $consignment_id ) ) {
+
+            $url = trailingslashit( 'https://merchant.pathao.com/courier/orders' )
+                . urlencode( $consignment_id );
 
             echo sprintf(
-                '<a href="%s" class="order-view" target="_blank">%s</a>',
-                esc_url($url),
-                esc_html($consignment_id)
+                '<a href="%s" target="_blank" class="order-view">%s</a>',
+                esc_url( $url ),
+                esc_html( $consignment_id )
             );
 
-            return;
+            return; // 🔴 VERY IMPORTANT
         }
 
-
-        // CASE 2: No consignment ID → show button
-        echo '<span class="ptc-assign-area">' . $button . '</span>';
+        // ❌ No consignment → show button
+        echo sprintf(
+            '<button type="button"
+                class="button button-primary ptc-open-modal-button"
+                data-order-id="%d">
+                %s
+            </button>',
+            esc_attr( $order_id ),
+            esc_html__( 'Send To Pathao', 'pathao' )
+        );
     }
+
+
 
     public function store_log_after_creation($res)
     {
         global $wpdb;
 
-        $log_table = $wpdb->prefix . 'pathao_logs';
-
         $order_id = isset($res->merchant_order_id)
-            ? (int)$res->merchant_order_id
-            : (isset($res->order_id) ? (int)$res->order_id : 0);
+            ? (int) $res->merchant_order_id
+            : (isset($res->order_id) ? (int) $res->order_id : 0);
 
+        if (!$order_id) {
+            return;
+        }
+
+        $consignment_id = sanitize_text_field($res->consignment_id ?? '');
+        $order_status   = sanitize_text_field($res->order_status ?? '');
+
+        // ✅ SAVE TO ORDER META (THIS WAS MISSING)
+        update_post_meta($order_id, '_pathao_consignment_id', $consignment_id);
+        update_post_meta($order_id, '_pathao_order_status', $order_status);
+
+        // Optional: delivery fee
+        if (!empty($res->delivery_fee)) {
+            update_post_meta($order_id, '_pathao_delivery_fee', $res->delivery_fee);
+        }
+
+        // Log table (optional but fine)
         $wpdb->insert(
-            $log_table,
-            array(
-                'order_id'        => $order_id,
-                'consignment_id'  => sanitize_text_field($res->consignment_id ?? ''),
-                'order_status'    => sanitize_text_field($res->order_status ?? ''),
-                'order_status_slug' => sanitize_text_field($res->order_status ?? ''),
-                'reason'          => "Pathao Order created & it's pending.",
-                'updated_at'      => current_time('mysql'),
-            ),
-            array('%d', '%s', '%s', '%s', '%s', '%s')
+            $wpdb->prefix . 'pathao_logs',
+            [
+                'order_id'           => $order_id,
+                'consignment_id'     => $consignment_id,
+                'order_status'       => $order_status,
+                'order_status_slug'  => $order_status,
+                'reason'             => "Pathao Order created & it's pending.",
+                'updated_at'         => current_time('mysql'),
+            ],
+            ['%d', '%s', '%s', '%s', '%s', '%s']
         );
     }
+
 
     public function register_meta_boxes()
     {
