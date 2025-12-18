@@ -361,7 +361,7 @@ class Ajax
 		}
 
 		if (isset($result->data->order_status)) {
-			error_log("hello_result:",$result);
+			// error_log("hello_result:",$result);
 
 			$order_status = sanitize_text_field($result['data']['order_status']);
 		} elseif (is_object($res) && isset($res->data->order_status)) {

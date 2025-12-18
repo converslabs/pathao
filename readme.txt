@@ -83,6 +83,7 @@ Sometimes, especially when new versions are released, it might only require some
  
 = version 1.1.1 =
 * **feature:**  Pathao Shipping Integration for WooCommerce.
+* **update:** add separate Pathao Shipping Details Page 
 * **fix:** add translation and sanitization.
 * **remove:** previous Code.
 * **Improve:** loading and performance.

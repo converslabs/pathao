@@ -316,63 +316,62 @@ class PathaoApiService
     | SEND ORDER TO PATHAO
     ------------------------------------------*/
     public function send_order(int $order_id): stdClass
-    {
+    { 
 
         if (!function_exists('wc_get_order')) {
+            error_log('[Pathao] WooCommerce missing');
             return (object)['success' => false, 'messages' => ['WooCommerce missing']];
         }
 
         $order = wc_get_order($order_id);
         if (!$order) {
+            error_log('[Pathao] Invalid order ID');
             return (object)['success' => false, 'messages' => ['Invalid order']];
         }
 
-        /* Extract Fields */
-        $settings = get_option('woocommerce_pathao_settings');
-        $store_id = (int)$settings['store'];
-
-        $recipient_name = trim($order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name());
-        $recipient_phone = $order->get_billing_phone();
-        if (empty($recipient_phone)) {
-            $recipient_phone = "01700000000";
+        /* Prevent duplicate Pathao order */
+        $existing = $order->get_meta('_pathao_consignment_id');
+        if (!empty($existing)) {
+            error_log('[Pathao] Consignment already exists: ' . $existing);
+            return (object)[
+                'success' => true,
+                'messages' => ['Already sent to Pathao'],
+                'consignment_id' => $existing
+            ];
         }
 
-
-        $recipient_address = $order->get_shipping_address_1() . ', ' . $order->get_shipping_city(); 
- 
+        /* Extract fields */
+        $settings = get_option('woocommerce_pathao_settings');
+        $store_id = (int)($settings['store'] ?? 0);
 
         $payload = [
-            'store_id' => $store_id,
-            'merchant_order_id' => (string)$order_id,
-            'recipient_name' => $recipient_name,
-            'recipient_phone' => $recipient_phone,
-            'recipient_address' => $recipient_address,
-            'delivery_type' => 48,
-            'item_type' => 2,
-            'special_instruction' => $order->get_customer_note() ?: '',
-            'item_quantity' => $order->get_item_count(),
-            'item_weight' => "0.5",
-            'item_description' => "WooCommerce Order #{$order_id}",
-            'amount_to_collect' => $order->get_payment_method() === 'cod'
+            'store_id'           => $store_id,
+            'merchant_order_id'  => (string)$order_id,
+            'recipient_name'     => trim(
+                $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name()
+            ),
+            'recipient_phone'    => $order->get_billing_phone() ?: '01700000000',
+            'recipient_address'  => $order->get_shipping_address_1() . ', ' . $order->get_shipping_city(),
+            'delivery_type'      => 48,
+            'item_type'          => 2,
+            'item_quantity'      => $order->get_item_count(),
+            'item_weight'        => '0.5',
+            'item_description'   => "WooCommerce Order #{$order_id}",
+            'amount_to_collect'  => $order->get_payment_method() === 'cod'
                 ? (int)$order->get_total()
                 : 0,
         ];
 
-        /* Validate */
+        error_log('[Pathao] Payload: ' . print_r($payload, true));
+
+        /* Validate payload */
         $validate = $this->validate_order_payload($payload);
         if ($validate !== true) {
+            error_log('[Pathao] Validation failed: ' . $validate);
             return (object)['success' => false, 'messages' => [$validate]];
         }
 
-
-
-        /* Validate */
-        $validate = $this->validate_order_payload($payload);
-        if ($validate !== true) {
-            return (object)['success' => false, 'messages' => [$validate]];
-        }
-
-        /* Send */
+        /* Send API request */
         $res = $this->request(
             'wp_remote_post',
             'aladdin/api/v1/orders',
@@ -380,14 +379,53 @@ class PathaoApiService
         );
 
         if ($err = $this->has_errors($res)) {
+            error_log('[Pathao] API error: ' . print_r($err, true));
             return $err;
         }
 
+        /* Decode response */
         $body = json_decode(wp_remote_retrieve_body($res));
 
+        // error_log('[Pathao] Raw response: ' . print_r($body, true));
 
-        return (object)['success' => true, 'data' => $body];
+        /* SAFELY check consignment_id */
+        if (
+            empty($body->data) ||
+            empty($body->data->consignment_id)
+        ) {
+            error_log('[Pathao] consignment_id missing in response');
+            return (object)[
+                'success' => false,
+                'messages' => ['Consignment ID not returned'],
+                'raw_response' => $body
+            ];
+        }
+
+        $consignment_id = sanitize_text_field($body->data->consignment_id);
+        $order_status   = sanitize_text_field($body->data->order_status ?? 'Pending');
+
+        /* Save to order meta */
+        $order->update_meta_data('_pathao_consignment_id', $consignment_id);
+        $order->update_meta_data('_pathao_order_status', $order_status);
+        $order->save();
+
+        error_log('[Pathao] Consignment saved: ' . $consignment_id);
+
+        /* Fire hook for logging table */
+        do_action('pathao_order_created', (object)[
+            'merchant_order_id' => $order_id,
+            'consignment_id'    => $consignment_id,
+            'order_status'      => $order_status,
+        ]);
+
+        return (object)[
+            'success' => true,
+            'consignment_id' => $consignment_id,
+            'order_status' => $order_status,
+            'data' => $body
+        ];
     }
+
 
     /*-----------------------------------------
     | PRICE CALCULATION
