@@ -53,7 +53,7 @@ class Ajax
 				'pathao-popup',
 				plugin_dir_url(__FILE__) . 'assets/js/popup.js',
 				['jquery'],
-				'1.2.0',
+				'2.0',
 				true
 			);
 
@@ -69,7 +69,7 @@ class Ajax
 				'pathao-admin',
 				plugin_dir_url(__FILE__) . 'assets/js/admin.js',
 				['jquery'],
-				'1.2.0',
+				'2.0',
 				true
 			);
 			wp_localize_script('pathao-admin', 'pathao_admin_obj', [
@@ -360,8 +360,7 @@ class Ajax
 			$consignment_id = sanitize_text_field($res->data->consignment_id);
 		}
 
-		if (isset($result->data->order_status)) {
-			// error_log("hello_result:",$result);
+		if (isset($result->data->order_status)) { 
 
 			$order_status = sanitize_text_field($result['data']['order_status']);
 		} elseif (is_object($res) && isset($res->data->order_status)) {

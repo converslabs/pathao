@@ -21,9 +21,12 @@ jQuery(document).ready(function ($) {
         $("#ptc-modal").fadeOut();
     }
 
-    $(document).on("click", ".ptc-open-modal-button", function () {
+        $(document).on("click", ".ptc-open-modal-button", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
         openPathaoModal($(this).data("order-id"));
     });
+
 
     $(document).on("click", "#ptc-send-cancel", closePathaoModal);
 
@@ -94,20 +97,28 @@ jQuery(document).ready(function ($) {
     });
 
     /* ---------------- SEND ORDER ---------------- */
-    $("#ptc-send-confirm").on("click", function () {
+        $("#ptc-send-confirm").on("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const orderId = $(this).data("order-id");
+
         $.post(AJAX_URL, {
             action: "send_order_to_pathao",
-            order_id: $(this).data("order-id"),
+            order_id: orderId,
             nonce: NONCE,
             form: $("#ptc-pathao-form").serialize()
         }, function (res) {
-            if (res.success) { 
-                
+
+            if (res.success) {
+                closePathaoModal();
                 location.reload();
             } else {
-                alert("Failed: " + res.data?.message);
+                alert("Failed: " + (res.data?.message || "Unknown error"));
+                // keep modal open on failure
             }
-            closePathaoModal();
+
         });
     });
+
 });

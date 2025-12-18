@@ -23,73 +23,8 @@ class Order
         add_action('init', array($this, 'load_hpos_hooks'));
 
         add_action('admin_footer', array($this, 'load_pathao_popup_view'));
-
-        add_action('admin_menu', array($this, 'pathao_order_submenu'));
-    }
-
-    public function pathao_order_submenu()
-    {
-        add_menu_page(
-            'Pathao Orders Page Title',
-            'Pathao Orders',
-            'manage_options',
-            'pathao-orders-menu-slug',
-            array($this, 'pathao_orders_menu_content'),
-            'dashicons-cart',
-            22
-        );
-    }
-
-    public function pathao_orders_menu_content()
-    {
-?>
-        <div class="wrap">
-            <h1 class="wp-heading-inline">Pathao Courier Order Page</h1>
-            <p class="description">Manage your deliveries without any distraction</p>
-            <hr class="wp-header-end">
-
-            <form method="get" style="margin: 20px 0;">
-                <input type="hidden" name="page" value="pathao-orders-menu-slug">
-
-                <label style="margin-right:10px;">
-                    Search orders:
-                    <input type="search" name="s" value="<?php echo esc_attr($_GET['s'] ?? ''); ?>">
-                </label>
-
-                <label style="margin-right:10px;">
-                    From Date
-                    <input type="date" name="from_date" value="<?php echo esc_attr($_GET['from_date'] ?? ''); ?>">
-                </label>
-
-                <label style="margin-right:10px;">
-                    To Date
-                    <input type="date" name="to_date" value="<?php echo esc_attr($_GET['to_date'] ?? ''); ?>">
-                </label>
-
-                <label style="margin-right:10px;">
-                    Items Per Page
-                    <select name="per_page">
-                        <?php
-                        $per_page = $_GET['per_page'] ?? 20;
-                        foreach ([10, 20, 50] as $count) {
-                            printf(
-                                '<option value="%d" %s>%d items</option>',
-                                $count,
-                                selected($per_page, $count, false),
-                                $count
-                            );
-                        }
-                        ?>
-                    </select>
-                </label>
-
-                <button class="button">Filter</button>
-            </form>
-
-            <?php $this->render_pathao_orders_table(); ?>
-        </div>
-<?php
-    }
+ 
+    } 
 
     private function render_pathao_orders_table()
     {
@@ -123,13 +58,13 @@ class Order
             <thead>
                 <tr>
                     <th><input type="checkbox"></th>
-                    <th>Order</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Total</th>
-                    <th>Pathao Courier</th>
-                    <th>Pathao Status</th>
-                    <th>Delivery Fee</th>
+                    <th><?php echo esc_html__( 'Order','integration-of-pathao-for-woocommerce' ); ?>
+                    <th><?php echo esc_html__( 'Date','integration-of-pathao-for-woocommerce' ); ?>
+                    <th><?php echo esc_html__( 'Status','integration-of-pathao-for-woocommerce' ); ?>
+                    <th><?php echo esc_html__( 'Total','integration-of-pathao-for-woocommerce' ); ?>
+                    <th><?php echo esc_html__( 'Pathao Courier','integration-of-pathao-for-woocommerce' ); ?>
+                    <th><?php echo esc_html__( 'Pathao Status','integration-of-pathao-for-woocommerce' ); ?>
+                    <th><?php echo esc_html__( 'Delivery Fee','integration-of-pathao-for-woocommerce' ); ?>
                 </tr>
             </thead>
 
@@ -137,9 +72,7 @@ class Order
                 <?php if ($orders) : ?>
                     <?php foreach ($orders as $order) :
 
-                        $consignment_id = $order->get_meta('_pathao_consignment_id');
-                                    // error_log($consignment_id);
-
+                        $consignment_id = $order->get_meta('_pathao_consignment_id');  
                         $pathao_status = $order->get_meta('_pathao_order_status');
                         $delivery_fee = $order->get_meta('_pathao_delivery_fee');
                     ?>
@@ -162,10 +95,10 @@ class Order
                                      
                                     <?php echo esc_html($consignment_id); ?>
                                 <?php else : ?>
-                                    <button class="button button-primary ptc-open-modal-button"
-                                            data-order-id="<?php echo esc_attr($order->get_id()); ?>">
-                                      A Send To Pathao
+                                    <button type="button" id="ptc-send-confirm" class="button button-primary"> 
+                                       <?php  echo esc_html__( 'Send To Pathao','integration-of-pathao-for-woocommerce' ); ?>
                                     </button>
+
                                 <?php endif; ?>
                             </td>
 
@@ -266,8 +199,7 @@ class Order
             $order_id = (int) $res->order_id;
         }
 
-        if ( ! $order_id ) {
-            // error_log('[Pathao] Order ID missing in response');
+        if ( ! $order_id ) { 
             return;
         }
 

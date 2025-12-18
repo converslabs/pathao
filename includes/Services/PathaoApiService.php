@@ -318,21 +318,18 @@ class PathaoApiService
     public function send_order(int $order_id): stdClass
     { 
 
-        if (!function_exists('wc_get_order')) {
-            error_log('[Pathao] WooCommerce missing');
+        if (!function_exists('wc_get_order')) { 
             return (object)['success' => false, 'messages' => ['WooCommerce missing']];
         }
 
         $order = wc_get_order($order_id);
-        if (!$order) {
-            error_log('[Pathao] Invalid order ID');
+        if (!$order) { 
             return (object)['success' => false, 'messages' => ['Invalid order']];
         }
 
         /* Prevent duplicate Pathao order */
         $existing = $order->get_meta('_pathao_consignment_id');
-        if (!empty($existing)) {
-            error_log('[Pathao] Consignment already exists: ' . $existing);
+        if (!empty($existing)) { 
             return (object)[
                 'success' => true,
                 'messages' => ['Already sent to Pathao'],
@@ -360,14 +357,10 @@ class PathaoApiService
             'amount_to_collect'  => $order->get_payment_method() === 'cod'
                 ? (int)$order->get_total()
                 : 0,
-        ];
-
-        error_log('[Pathao] Payload: ' . print_r($payload, true));
-
+        ];  
         /* Validate payload */
         $validate = $this->validate_order_payload($payload);
-        if ($validate !== true) {
-            error_log('[Pathao] Validation failed: ' . $validate);
+        if ($validate !== true) { 
             return (object)['success' => false, 'messages' => [$validate]];
         }
 
@@ -378,22 +371,17 @@ class PathaoApiService
             ['body' => json_encode($payload)]
         );
 
-        if ($err = $this->has_errors($res)) {
-            error_log('[Pathao] API error: ' . print_r($err, true));
+        if ($err = $this->has_errors($res)) { 
             return $err;
         }
 
         /* Decode response */
-        $body = json_decode(wp_remote_retrieve_body($res));
-
-        // error_log('[Pathao] Raw response: ' . print_r($body, true));
-
+        $body = json_decode(wp_remote_retrieve_body($res));  
         /* SAFELY check consignment_id */
         if (
             empty($body->data) ||
             empty($body->data->consignment_id)
-        ) {
-            error_log('[Pathao] consignment_id missing in response');
+        ) { 
             return (object)[
                 'success' => false,
                 'messages' => ['Consignment ID not returned'],
@@ -408,9 +396,7 @@ class PathaoApiService
         $order->update_meta_data('_pathao_consignment_id', $consignment_id);
         $order->update_meta_data('_pathao_order_status', $order_status);
         $order->save();
-
-        error_log('[Pathao] Consignment saved: ' . $consignment_id);
-
+  
         /* Fire hook for logging table */
         do_action('pathao_order_created', (object)[
             'merchant_order_id' => $order_id,
