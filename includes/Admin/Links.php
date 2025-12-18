@@ -28,7 +28,7 @@ class Links {
 		$extra_links['settings'] = '<a href="' . admin_url( 'admin.php?page=wc-settings&tab=shipping&section=pathao' ) . '" aria-label="' . esc_attr__( 'View Shipping settings', 'integration-of-pathao-for-woocommerce' ) . '">' . esc_html__( 'Settings', 'integration-of-pathao-for-woocommerce' ) . '</a>';
 
 		if ( ! is_sdevs_pathao_pro_activated() ) {
-			$extra_links['premium'] = '<a href="https://springdevs.com/plugin/pathao" target="_blank" style="color:#3db634;">' . __( 'Upgrade to premium', 'integration-of-pathao-for-woocommerce' ) . '</a>';
+			$extra_links['premium'] = '<a href="https://converslabs.com/products/pathao/" target="_blank" style="color:#3db634;">' . __( 'Upgrade to premium', 'integration-of-pathao-for-woocommerce' ) . '</a>';
 		}
 		$extra_links['deactivate'] = $links['deactivate'];
 		unset( $links['deactivate'] );
