@@ -156,19 +156,35 @@ class Order
                             <td><?php echo esc_html(wc_get_order_status_name($order->get_status())); ?></td>
                             <td><?php echo wp_kses_post($order->get_formatted_order_total()); ?></td>
 
-                            <td>
-                                <?php if ($consignment_id) : 
-                                    ?>
-                                     
-                                    <?php echo esc_html($consignment_id); ?>
-                                <?php else : ?>
-                                    <button class="button button-primary ptc-open-modal-button"
-                                            data-order-id="<?php echo esc_attr($order->get_id()); ?>">
-                                      A Send To Pathao
-                                    </button>
-                                <?php endif; ?>
-                            </td>
+                        <td>
+                            <?php
+                            $order_id       = $order->get_id();
+                            $consignment_id = trim($order->get_meta('_pathao_consignment_id'));
 
+                            // Build Send button
+                            $button = sprintf(
+                                '<button class="button button-primary ptc-open-modal-button" data-order-id="%d">Send To Pathao</button>',
+                                $order_id
+                            );
+
+                            if ( ! empty( $consignment_id ) ) {
+
+                                // Pathao order URL
+                                $url = 'https://merchant.pathao.com/courier/orders/' . urlencode( $consignment_id );
+
+                                echo sprintf(
+                                    '<a href="%s" class="order-view" target="_blank">%s</a>',
+                                    esc_url( $url ),
+                                    esc_html( $consignment_id )
+                                );
+
+                            } else {
+
+                                echo '<span class="ptc-assign-area">' . $button . '</span>';
+
+                            }
+                            ?>
+                        </td> 
                             <td><?php echo esc_html($pathao_status ?: '—'); ?></td>
                             <td><?php echo esc_html($delivery_fee ?: '—'); ?></td>
                         </tr>
@@ -208,51 +224,72 @@ class Order
     public function add_custom_columns($columns)
     {
         $columns['sdevs_pathao_order_column'] = __('Pathao', 'integration-of-pathao-for-woocommerce');
+        $columns['sdevs_pathao_status_column'] = __( 'Pathao Status', 'integration-of-pathao-for-woocommerce' );
+    $columns['sdevs_pathao_fee_column']    = __( 'Delivery Fee', 'integration-of-pathao-for-woocommerce' );
         return $columns;
     }
 
-    public function add_custom_columns_data($column, $order)
-    {
-        if ($column !== 'sdevs_pathao_order_column') {
+    public function add_custom_columns_data( $column, $order ) {
+
+    if ( $order instanceof WC_Order ) {
+        $order_obj = $order;
+    } else {
+        $order_obj = wc_get_order( absint( $order ) );
+        if ( ! $order_obj ) {
+            echo '—';
             return;
         }
+    }
 
-        if ($order instanceof WC_Order) {
-            $order_obj = $order;
-        } else {
-            $order_obj = wc_get_order(absint($order));
-            if (!$order_obj) {
-                echo 'N/A';
-                return;
-            }
-        }
+    $order_id       = $order_obj->get_id();
+    $consignment_id = trim( $order_obj->get_meta( '_pathao_consignment_id' ) );
+    $pathao_status  = $order_obj->get_meta( '_pathao_order_status' ); 
+    $delivery_fee = (string) $order_obj->get_meta( '_pathao_delivery_fee', true );
 
-        $order_id = $order_obj->get_id();
-        $consignment_id = trim($order_obj->get_meta('_pathao_consignment_id'));
 
-        $button = sprintf(
-            '<button class="button button-primary ptc-open-modal-button" data-order-id="%d">Send To Pathao</button>',
-            $order_id
-        ); 
-      
-        if (!empty($consignment_id)) {
+    switch ( $column ) {
 
-            // Base URL MUST be in quotes
-            $url = 'https://merchant.pathao.com/' . 'courier/orders/' . urlencode($consignment_id);
+        /** Pathao Courier column */
+        case 'sdevs_pathao_order_column':
 
-            echo sprintf(
-                '<a href="%s" class="order-view" target="_blank">%s</a>',
-                esc_url($url),
-                esc_html($consignment_id)
+            $button = sprintf(
+                '<button class="button button-primary ptc-open-modal-button" data-order-id="%d">Send To Pathao</button>',
+                $order_id
             );
 
-            return;
-        }
+            if ( ! empty( $consignment_id ) ) {
 
+                $url = 'https://merchant.pathao.com/courier/orders/' . urlencode( $consignment_id );
 
-        // CASE 2: No consignment ID → show button
-        echo '<span class="ptc-assign-area">' . $button . '</span>';
+                echo sprintf(
+                    '<a href="%s" class="order-view" target="_blank">%s</a>',
+                    esc_url( $url ),
+                    esc_html( $consignment_id )
+                );
+
+            } else {
+                echo '<span class="ptc-assign-area">' . $button . '</span>';
+            }
+
+            break;
+
+        /** Pathao Status column */
+        case 'sdevs_pathao_status_column':
+            echo esc_html( $pathao_status ?: '—' );
+            break;
+
+        /** Delivery Fee column */
+        case 'sdevs_pathao_fee_column':
+            if ( $delivery_fee === '' ) {
+              echo '—';
+            } else {
+                echo esc_html( $delivery_fee );
+            }
+
+            break;
     }
+}
+
 
     public function store_log_after_creation( $res ) {
         global $wpdb;
