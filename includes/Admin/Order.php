@@ -97,7 +97,7 @@ class Order
 
         $args = [
             'limit' => $per_page,
-            'orderby' => 'date',
+            'orderby' => 'date_created', 
             'order' => 'DESC',
         ];
 
@@ -105,20 +105,28 @@ class Order
             $args['search'] = sanitize_text_field($_GET['s']);
         }
 
-        if (!empty($_GET['from_date']) || !empty($_GET['to_date'])) {
-            $args['date_created'] = [];
+        if ( ! empty( $_GET['from_date'] ) && ! empty( $_GET['to_date'] ) ) {
 
-            if (!empty($_GET['from_date'])) {
-                $args['date_created']['after'] = sanitize_text_field($_GET['from_date']);
-            }
+            $from = sanitize_text_field( $_GET['from_date'] );
+            $to   = sanitize_text_field( $_GET['to_date'] );
 
-            if (!empty($_GET['to_date'])) {
-                $args['date_created']['before'] = sanitize_text_field($_GET['to_date']);
-            }
+            $args['date_created'] = $from . '...' . $to;
+
+        } elseif ( ! empty( $_GET['from_date'] ) ) {
+
+            $from = sanitize_text_field( $_GET['from_date'] );
+            $args['date_created'] = '>=' . $from;
+
+        } elseif ( ! empty( $_GET['to_date'] ) ) {
+
+            $to = sanitize_text_field( $_GET['to_date'] );
+            $args['date_created'] = '<=' . $to;
         }
 
+
+
         $orders = wc_get_orders($args);
-?>
+        ?>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
@@ -197,7 +205,7 @@ class Order
             </tbody>
         </table>
 
-<?php
+     <?php
     }
 
     public function load_pathao_popup_view()
