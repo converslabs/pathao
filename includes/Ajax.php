@@ -42,12 +42,125 @@ class Ajax
 		add_action('wp_ajax_nopriv_send_order_to_pathao', [$this, 'send_order_to_pathao']);
 		add_action('wp_ajax_send_order_to_pathao', [$this, 'send_order_to_pathao']);
 		add_action('admin_enqueue_scripts', [$this, 'sncue_admin']);
+
+		add_action('wp_ajax_send_bulk_orders_to_pathao', [$this, 'send_bulk_orders_to_pathao']);
+		add_action( 'wp_ajax_pathao_sync_bulk_orders', [$this, 'sync_bulk_orders_from_pathao']);
+
+
 	}
+	
 
-
-	public function sncue_admin($hook)
+	private function build_bulk_order_payload(WC_Order $order): array
 	{
+		$settings = get_option('woocommerce_pathao_settings');
+		$store_id = (int) ($settings['store'] ?? 0);
 
+		$totals = sdevs_pathao_get_totals_from_items($order);
+
+		return [
+			'store_id'            => $store_id,
+			'merchant_order_id'   => (string) $order->get_id(),
+			'recipient_name'      => trim(
+				$order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name()
+			),
+			'recipient_phone'     => str_replace('+88', '', $order->get_billing_phone()),
+			'recipient_address'   => $order->get_shipping_address_1() . ', ' . $order->get_shipping_city(),
+			'delivery_type'       => 48,
+			'item_type'           => 2,
+			'special_instruction' => '',
+			'item_quantity'       => max(1, $totals->quantity),
+			'item_weight'         => max(0.5, (float) $totals->weight),
+			'amount_to_collect'   => $order->get_payment_method() === 'cod'
+				? (int) $order->get_total()
+				: 0,
+			'item_description'    => $totals->item_description,
+		];
+	} 
+
+	public function send_bulk_orders_to_pathao()
+	{
+		error_log('[Pathao Bulk] Order IDs: ' . print_r($_POST['order_ids'], true));
+
+		check_ajax_referer('pathao_nonce', 'nonce');
+
+		error_log('[Pathao Bulk] AJAX triggered');
+
+		if (empty($_POST['order_ids']) || !is_array($_POST['order_ids'])) {
+			error_log('[Pathao Bulk] No order_ids received');
+			wp_send_json_error(['message' => 'No orders selected']);
+		}
+
+		$orders_payload = [];
+		$order_ids = array_map('absint', $_POST['order_ids']);
+
+		error_log('[Pathao Bulk] Order IDs: ' . print_r($order_ids, true));
+
+		foreach ($order_ids as $order_id) {
+
+			$order = wc_get_order($order_id);
+			if (!$order) {
+				error_log("[Pathao Bulk] Order not found: {$order_id}");
+				continue;
+			}
+
+			// Skip already created Pathao orders
+			if ($order->get_meta('_pathao_consignment_id')) {
+				error_log("[Pathao Bulk] Already sent, skipping: {$order_id}");
+				continue;
+			}
+
+			$payload = [
+				'store_id' => (int) get_option('pathao_store_id'),
+				'merchant_order_id' => (string) $order_id,
+				'recipient_name' => trim(
+					$order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name()
+				),
+				'recipient_phone' => str_replace('+88', '', $order->get_billing_phone()),
+				'recipient_address' => $order->get_shipping_address_1(),
+				'delivery_type' => 48,
+				'item_type' => 2,
+				'item_quantity' => max(1, $order->get_item_count()),
+				'item_weight' => 0.5,
+				'amount_to_collect' => (float) $order->get_total(),
+				'item_description' => 'WooCommerce Order #' . $order_id,
+			];
+
+			error_log('[Pathao Bulk] Payload for order ' . $order_id . ': ' . wp_json_encode($payload));
+
+			$orders_payload[] = $payload;
+
+			// mark as pending (important for sync)
+			update_post_meta($order_id, '_pathao_order_status', 'pending');
+			update_post_meta($order_id, '_pathao_bulk_sent', 1);
+		}
+
+		if (empty($orders_payload)) {
+			error_log('[Pathao Bulk] Nothing to send');
+			wp_send_json_error(['message' => 'All selected orders already sent']);
+		}
+
+		$api = new \SpringDevs\Pathao\Services\PathaoApiService();
+
+		error_log('[Pathao Bulk] Sending bulk request...');
+
+		$response = $api->send_bulk_orders($orders_payload);
+
+		error_log('[Pathao Bulk] API response: ' . print_r($response, true));
+
+		if (!is_object($response) || empty($response->success)) {
+			wp_send_json_error([
+				'message' => 'Bulk request failed',
+				'debug'   => $response,
+			]);
+		}
+
+		wp_send_json_success([
+			'message' => 'Bulk order request accepted. Pathao is processing orders.',
+		]);
+	} 
+ 
+	public function sncue_admin($hook)
+	{ 
 		// Check if we are on ANY WooCommerce order pag
 			wp_enqueue_script(
 				'pathao-popup',
@@ -76,8 +189,81 @@ class Ajax
 				'ajax_url' => admin_url('admin-ajax.php'),
 				'order_id' => isset($_GET['order_id']) ? intval($_GET['order_id']) : 0,
 			]);
+
+			wp_localize_script('pathao-admin-js', 'pathao_vars', [
+				'ajax_url' => admin_url('admin-ajax.php'),
+				'nonce'    => wp_create_nonce('pathao_nonce'),
+			]);
 		}
 	}
+
+	public function sync_bulk_orders_from_pathao() {
+
+			if (
+			! current_user_can('manage_woocommerce')
+			) {
+			wp_send_json_error(['message' => 'Permission denied']);
+			}
+
+			$orders = wc_get_orders([
+			'limit' => 50,
+			'meta_key' => '_pathao_bulk_sent',
+			'meta_value' => 1,
+			]);
+
+			$api = new \SpringDevs\Pathao\Services\PathaoApiService();
+			$synced = [];
+
+			foreach ($orders as $order) {
+
+			if ($order->get_meta('_pathao_consignment_id')) {
+			continue; // already synced
+			}
+
+			$res = $api->get_order_by_merchant_order_id(
+			(string) $order->get_id()
+			);
+
+			if (! $res->success) {
+			continue;
+			}
+
+			$data = $res->data;
+
+			$order->update_meta_data(
+			'_pathao_consignment_id',
+			sanitize_text_field($data->consignment_id)
+			);
+
+			$order->update_meta_data(
+			'_pathao_order_status',
+			sanitize_text_field($data->order_status)
+			);
+
+			$order->update_meta_data(
+			'_pathao_delivery_fee',
+			sanitize_text_field($data->delivery_fee ?? '')
+			);
+
+			$order->delete_meta_data('_pathao_bulk_sent');
+			$order->save();
+
+			do_action('pathao_order_created', (object)[
+			'merchant_order_id' => (string) $order->get_id(),
+			'consignment_id' => $data->consignment_id,
+			'order_status' => $data->order_status,
+			'delivery_fee' => $data->delivery_fee ?? null,
+			]);
+
+			$synced[] = $order->get_id();
+			}
+
+			wp_send_json_success([
+			'synced_orders' => $synced
+			]);
+		}
+
+
 
 	/**
 	 * Get cities.

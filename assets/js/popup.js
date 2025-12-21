@@ -1,5 +1,6 @@
 jQuery(document).ready(function ($) {
 
+    alert("Hello popup js");
     if (typeof pathao_vars === "undefined") {
         console.error("pathao_vars is missing");
         return;

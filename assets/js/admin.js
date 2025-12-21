@@ -381,3 +381,45 @@ function isInteger(n) {
 function isFloat(n) {
 	return Number(n) === n && n % 1 !== 0;
 }
+
+
+jQuery(function ($) {
+
+  $('#pathao-bulk-send').on('click', function (e) {
+    e.preventDefault();
+
+    let orderIds = [];
+
+    $('.pathao-order-checkbox:checked').each(function () {
+      orderIds.push($(this).val());
+    });
+
+    if (orderIds.length === 0) {
+      alert('Please select at least one order');
+      return;
+    }
+
+    if (!confirm('Send selected orders to Pathao?')) {
+      return;
+    }
+
+    $.post(pathao_vars.ajax_url, {
+      action: 'send_bulk_orders_to_pathao',
+      nonce: pathao_vars.nonce,
+      order_ids: orderIds
+    })
+    .done(function (res) {
+      if (res.success) {
+        alert(res.data.message);
+        location.reload();
+      } else {
+        alert(res.data.message || 'Bulk order failed');
+      }
+    })
+    .fail(function () {
+      alert('AJAX request failed');
+    });
+
+  });
+
+});

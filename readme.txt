@@ -29,7 +29,7 @@ Here we made a solution that will take all the information from the user and sen
 
 ### Premium
 
-Explore our [Premium Version here](https://springdevs.com/plugin/pathao).
+Explore our [Premium Version here](https://converslabs.com/products/pathao/).
 
 1.  Register Pathao as a shipping method
 2.  Automatically calculate shipping charge based on location

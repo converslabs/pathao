@@ -24,6 +24,9 @@
                 add_action('admin_footer', array($this, 'load_pathao_popup_view'));
 
                 add_action('admin_menu', array($this, 'pathao_order_submenu'));
+
+                add_action('admin_init', [$this, 'sync_pending_bulk_orders']);
+
             }
 
             public function pathao_order_submenu()
@@ -37,6 +40,41 @@
                     'dashicons-cart',
                     22
                 );
+            }
+            /**
+             * Sync pending Pathao bulk orders when Pathao Orders page loads
+             */
+            public function sync_pending_bulk_orders()
+            {
+                // Run ONLY on Pathao Orders page
+                if (
+                    ! is_admin() ||
+                    ! isset($_GET['page']) ||
+                    $_GET['page'] !== 'pathao-orders-menu-slug'
+                ) {
+                    return;
+                }
+
+                // Avoid running too frequently (cache for 2 minutes)
+                if (get_transient('_pathao_bulk_sync_running')) {
+                    return;
+                }
+
+                set_transient('_pathao_bulk_sync_running', 1, 2 * MINUTE_IN_SECONDS);
+
+                $orders = wc_get_orders([
+                    'limit'      => 20,
+                    'meta_key'   => '_pathao_order_status',
+                    'meta_value' => 'pending',
+                ]);
+
+                if (empty($orders)) {
+                    return;
+                }
+
+                foreach ($orders as $order) {
+                    $this->update_order_info_from_pathao($order->get_id());
+                }
             }
 
             public function pathao_orders_menu_content()
@@ -87,6 +125,9 @@
 
                     <?php $this->render_pathao_orders_table(); ?>
                 </div>
+                <button  id="pathao-bulk-send" class="button button-primary"  style="margin: 10px 0;" > 
+                    Send Selected Orders to Pathao  </button>
+
                 <?php
             }
 
@@ -151,8 +192,13 @@
                                 $delivery_fee = $order->get_meta('_pathao_delivery_fee');
                             ?>
                                 <tr>
-                                    <td><input type="checkbox"></td>
-
+                                   <td>
+                                    <input
+                                        type="checkbox"
+                                        class="pathao-order-checkbox"
+                                        value="<?php echo esc_attr( $order->get_id() ); ?>"
+                                    >
+                                 </td> 
                                     <td>
                                         <a href="<?php echo esc_url(get_edit_post_link($order->get_id())); ?>">
                                             #<?php echo esc_html($order->get_id()); ?>
@@ -221,22 +267,28 @@
             public function update_order_info_from_pathao(int $order_id): void
             {
                 $order = wc_get_order($order_id);
-                if (!$order) return;
+                if (! $order) return;
 
-                $consignment_id = $order->get_meta('_pathao_consignment_id');
-                if (!$consignment_id) return; // nothing to fetch
+                $status = $order->get_meta('_pathao_order_status');
+
+                // Only sync pending orders
+                if ($status !== 'pending') return;
 
                 $api = new PathaoApiService();
-                $res = $api->get_order_info($consignment_id);
+                $res = $api->get_order_by_merchant_order_id((string) $order_id);
 
-                if ($res->success) {
+                if (! empty($res->data)) {
                     $data = $res->data;
 
-                    $order->update_meta_data('_pathao_order_status', sanitize_text_field($data->order_status ?? ''));
-                    $order->update_meta_data('_pathao_delivery_fee', sanitize_text_field($data->delivery_fee ?? ''));
-                    $order->save();
+                    update_post_meta($order_id, '_pathao_consignment_id', $data->consignment_id ?? '');
+                    update_post_meta($order_id, '_pathao_order_status', $data->order_status ?? '');
+
+                    if (! empty($data->delivery_fee)) {
+                        update_post_meta($order_id, '_pathao_delivery_fee', $data->delivery_fee);
+                    }
                 }
-            }
+            } 
+
             public function load_hpos_hooks()
             {
                 add_action(

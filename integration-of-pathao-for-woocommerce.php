@@ -2,12 +2,12 @@
 
 /**
  * Plugin Name: Pathao Integration for WooCommerce
- * Plugin URI: https://springdevs.com/plugin/pathao
+ * Plugin URI: https://converslabs.com/products/pathao/
  * Description: Pathao integration for WooCommerce
  * Version: 1.1.1
  * Contributors: converswp, shamsbd71
  * Author: ConversWP
- * Author URI: https://springdevs.com
+ * Author URI: https://converslabs.com
  * Requires Plugins: woocommerce 
  * License: GPLv2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
