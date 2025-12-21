@@ -8,8 +8,12 @@
  */
 
 use Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController;
- 
 
+/**
+ * Check if pathao pro activated.
+ *
+ * @return bool
+ */
 function is_sdevs_pathao_pro_activated(): bool {
 	return class_exists( 'Sdevs_Pathao_Pro' );
 }
@@ -51,10 +55,6 @@ function sdevs_pathao_settings( string $key, $default_value = false ) {
 
 	return $settings && is_array( $settings ) && isset( $settings[ $key ] ) ? $settings[ $key ] : $default_value;
 }
-
-
-
-
 
 /**
  * Get total weight, quantity, description from order.
