@@ -66,33 +66,29 @@ class Assets {
             );
         }
     }
+ 
+     public function enqueue_admin_assets() {
 
-    public function enqueue_admin_assets() {
-        $screen = get_current_screen();
+    $this->register_scripts();
+    $this->register_styles();
 
-        // 🔧 TEMP: Disable screen check so assets load everywhere
-        // if (!$screen || $screen->id !== 'edit-shop_order') {
-        //     return;
-        // }
-  
-        // Register
-        $this->register_scripts();
-        $this->register_styles();
+    wp_enqueue_script('pathao_admin_script');
+    wp_enqueue_script('pathao_popup_script');
 
-        // Enqueue scripts
-        foreach ($this->get_scripts() as $handle => $script) {
-            wp_enqueue_script($handle);
-        }
+    wp_localize_script('pathao_admin_script', 'pathao_vars', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('pathao_nonce'),
+    ]);
 
-        wp_localize_script('pathao_popup_script', 'PTC_AJAX', [
-            'ajax_url' => admin_url('admin-ajax.php')
-        ]);
+    wp_localize_script('pathao_popup_script', 'pathao_vars', [
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce'    => wp_create_nonce('pathao_nonce'),
+    ]);
 
-        // Enqueue styles
-        foreach ($this->get_styles() as $handle => $style) {
-            wp_enqueue_style($handle);
-        }
+    foreach ($this->get_styles() as $handle => $style) {
+        wp_enqueue_style($handle);
     }
+}
 
 
 }
