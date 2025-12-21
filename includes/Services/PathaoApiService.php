@@ -1,6 +1,8 @@
 <?php
 
 namespace SpringDevs\Pathao\Services;
+use SpringDevs\Pathao\Services\PathaoApiService;
+
 
 use stdClass;
 
@@ -425,8 +427,40 @@ class PathaoApiService
             'data' => $body
         ];
     }
+    /*-----------------------------------------
+    | GET ORDER SHORT INFO
+    ------------------------------------------*/
+    public function get_order_info(string $consignment_id): stdClass
+    {
+        if (empty($consignment_id)) {
+            return (object)[
+                'success' => false,
+                'messages' => ['Consignment ID is required']
+            ];
+        }
 
+        $res = $this->request(
+            'wp_remote_get',
+            "aladdin/api/v1/orders/{$consignment_id}/info"
+        );
 
+        if ($err = $this->has_errors($res)) return $err;
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        if (empty($body->data)) {
+            return (object)[
+                'success' => false,
+                'messages' => ['No order data returned'],
+                'raw_response' => $body
+            ];
+        }
+
+        return (object)[
+            'success' => true,
+            'data' => $body->data
+        ];
+    }  
     /*-----------------------------------------
     | PRICE CALCULATION
     ------------------------------------------*/
