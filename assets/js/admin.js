@@ -101,3 +101,48 @@ jQuery(document).ready(function ($) {
 
 
 });
+
+
+
+$(document).on('change', '#ptc-city', function () {
+    const cityId = $(this).val();
+
+    if (!cityId) return;
+
+    $.post(AJAX_URL, {
+        action: 'get_city_zones',
+        nonce: NONCE,
+        city: cityId
+    }, function (res) {
+        const $zone = $('#ptc-zone');
+        $zone.empty().append('<option value="">Select Zone</option>');
+
+        if (res.zones) {
+            res.zones.forEach(z => {
+                $zone.append(`<option value="${z.id}">${z.name}</option>`);
+            });
+        }
+    });
+});
+
+
+$(document).on('change', '#ptc-zone', function () {
+    const zoneId = $(this).val();
+
+    if (!zoneId) return;
+
+    $.post(AJAX_URL, {
+        action: 'get_zone_areas',
+        nonce: NONCE,
+        zone: zoneId
+    }, function (res) {
+        const $area = $('#ptc-area');
+        $area.empty().append('<option value="">Select Area</option>');
+
+        if (res.areas) {
+            res.areas.forEach(a => {
+                $area.append(`<option value="${a.id}">${a.name}</option>`);
+            });
+        }
+    });
+});

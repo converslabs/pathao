@@ -25,6 +25,8 @@
             add_action('wp_ajax_get_wc_order_info', [$this, 'get_wc_order_info']);
 
             add_action('wp_ajax_get_cities', [$this, 'get_cities']);
+            add_action('wp_ajax_get_city_zones', [$this, 'get_city_zones']);
+
             add_action('wp_ajax_get_zone_areas', [$this, 'get_zone_areas']);
 
             add_action('wp_ajax_pathao_sync_order_status', [$this, 'sync_order_status']);
@@ -179,7 +181,7 @@
                 'amount_to_collect' => $order->is_paid() ? 0 : (float) $order->get_total(),
             ];
 
-            $res = $api->send_order($order_id, $payload);
+            $res = $api->send_order($order_id);
 
             if (!$res || empty($res->success)) {
                 wp_send_json_error(['message' => 'Pathao API failed', 'raw' => $res]);
@@ -200,6 +202,24 @@
                 'cities' => $res->success ? $res->data : []
             ]);
         }
+
+        public function get_city_zones() {
+            check_ajax_referer('pathao_nonce', 'nonce');
+
+            $city_id = absint($_POST['city'] ?? 0);
+            if (!$city_id) {
+                wp_send_json_error(['message' => 'Invalid city id']);
+            }
+
+            $res = PathaoAPI::get_city_zones($city_id);
+
+            wp_send_json([
+                'zones' => ($res->success ?? false) ? $res->data : []
+            ]);
+        }
+
+
+
 
         public function get_zone_areas() {
             check_ajax_referer('pathao_nonce', 'nonce');

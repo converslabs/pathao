@@ -144,65 +144,126 @@ class PathaoApiService
             return $cached;
         }
 
-        $res = $this->request('wp_remote_get', 'aladdin/api/v1/cities');
+        $res = $this->request('wp_remote_get', 'aladdin/api/v1/city-list');
 
         if ($err = $this->has_errors($res)) {
             return $err;
-        }
+        } 
+        $body = json_decode(wp_remote_retrieve_body($res)); 
 
-        $body = json_decode(wp_remote_retrieve_body($res));
-
-
-        if (!isset($body->data->data)) {
+        if (!isset($body->data->data) || !is_array($body->data->data)) {    
             return (object)[
                 'success' => false,
                 'messages' => ['Cities data malformed']
             ];
-        }
-
+        } 
         $list = [];
         foreach ($body->data->data as $c) {
             $list[] = (object)[
                 'id'   => $c->city_id,
                 'name' => $c->city_name
             ];
-        }
-
+        } 
         set_transient($transient_key, $list, 12 * HOUR_IN_SECONDS);
+         error_log('[Pathao City List] ' . print_r($body, true));
 
         return (object)['success' => true, 'data' => $list];
-    }
+    } 
 
     /*-----------------------------------------
-    | GET ZONES
+    | GET ZONES BY CITY (NEW ENDPOINT)
+    | /aladdin/api/v1/cities/{city_id}/zone-list
     ------------------------------------------*/
-    public function get_zones($city_id)
+    public function get_city_zones(int $city_id): stdClass
     {
+        $key = "_sdevs_pathao_city_{$city_id}_zones";
+
+        if ($c = $this->has_transient($key)) {
+            return $c;
+        }
+
         $res = $this->request(
             'wp_remote_get',
-            "aladdin/api/v1/zones?city_id={$city_id}"
+            "aladdin/api/v1/cities/{$city_id}/zone-list"
         );
 
-        if ($err = $this->has_errors($res)) {
+         if ($err = $this->has_errors($res)) {
+            error_log('[Pathao Zone Error] ' . print_r($err, true));
             return $err;
         }
 
         $body = json_decode(wp_remote_retrieve_body($res));
 
-        if (!isset($body->data->data)) {
-            return [];
+        error_log('================ Pathao Zone List API ================');
+        error_log('City ID: ' . $city_id);
+        error_log('HTTP Code: ' . wp_remote_retrieve_response_code($res));
+        error_log('Raw Response: ' . print_r($body, true));
+        error_log('====================================================');
+         
+        if (
+            empty($body->data->data) ||
+            !is_array($body->data->data)
+        ) {
+            return (object)[
+                'success' => false,
+                'messages' => ['Zone data malformed']
+            ];
         }
 
-        $out = [];
+        $list = [];
         foreach ($body->data->data as $z) {
-            $out[] = [
+            $list[] = (object)[
                 'id'   => $z->zone_id,
                 'name' => $z->zone_name,
             ];
         }
 
-        return $out;
+        set_transient($key, $list, 12 * HOUR_IN_SECONDS);
+
+        return (object)[
+            'success' => true,
+            'data'    => $list
+        ];
     }
+
+
+
+ 
+
+
+
+
+
+    /*-----------------------------------------
+    | GET areas inside a particular zone
+    ------------------------------------------*/
+    // public function get_zones($city_id)
+    // {
+    //     $res = $this->request(
+    //         'wp_remote_get',
+    //         "aladdin/api/v1/zones?city_id={$city_id}"
+    //     );
+
+    //     if ($err = $this->has_errors($res)) {
+    //         return $err;
+    //     }
+
+    //     $body = json_decode(wp_remote_retrieve_body($res));
+
+    //     if (!isset($body->data) || !is_array($body->data)) {
+    //         return [];
+    //     }
+
+    //     $out = [];
+    //     foreach ($body->data->data as $z) {
+    //         $out[] = [
+    //             'id'   => $z->zone_id,
+    //             'name' => $z->zone_name,
+    //         ];
+    //     }
+
+    //     return $out;
+    // }
 
     /*-----------------------------------------
     | GET AREAS
@@ -563,10 +624,9 @@ class PathaoApiService
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
-        $body = json_decode(wp_remote_retrieve_body($response));
+        $body = json_decode(wp_remote_retrieve_body($response)); 
 
-        error_log('[Pathao Order Info] HTTP ' . $status_code);
-        error_log(print_r($body, true));
+        // error_log(print_r($body, true));
 
         if ($status_code !== 200 || empty($body->data)) {
             return (object) [
