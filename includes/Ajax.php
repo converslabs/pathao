@@ -23,9 +23,11 @@ class Ajax {
 
         add_action('wp_ajax_send_bulk_orders_to_pathao', [$this, 'send_bulk_orders_to_pathao']);
         add_action('wp_ajax_send_order_to_pathao', [$this, 'send_order_to_pathao']);
+        add_action('wp_ajax_get_wc_order_info', [$this, 'get_wc_order_info']);
 
         add_action('wp_ajax_get_cities', [$this, 'get_cities']);
         add_action('wp_ajax_get_zone_areas', [$this, 'get_zone_areas']);
+
     }
 
     /* -------------------------------------------------------------------------
@@ -101,6 +103,43 @@ class Ajax {
         ]);
     }
 
+
+    public function get_wc_order_info() {
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
+
+        $order_id = absint($_POST['order_id'] ?? 0);
+        if (!$order_id) {
+            wp_send_json_error(['message' => 'Invalid order id']);
+        }
+
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            wp_send_json_error(['message' => 'Order not found']);
+        }
+
+        $items = [];
+        foreach ($order->get_items() as $item) {
+            $items[] = $item->get_name() . ' x ' . $item->get_quantity();
+        }
+
+        wp_send_json([
+            'name'           => $order->get_formatted_shipping_full_name(),
+            'phone'          => $order->get_billing_phone(),
+            'address'        => $order->get_shipping_address_1(),
+            'items'          => implode("\n", $items),
+            'weight'         => 0.5,
+            'quantity'       => $order->get_item_count(),
+            'total'          => $order->get_total(),
+            'payment_status' => $order->is_paid() ? 'Paid' : 'Unpaid',
+            'cod_amount'     => $order->is_paid() ? 0 : $order->get_total(),
+            'store_name'     => get_option('pathao_store_name'),
+        ]);
+    } 
+
+
     /* -------------------------------------------------------------------------
      * SINGLE ORDER SEND
      * ---------------------------------------------------------------------- */
@@ -154,7 +193,10 @@ class Ajax {
         check_ajax_referer('pathao_nonce', 'nonce');
 
         $res = PathaoAPI::get_cities();
-        wp_send_json_success($res->data ?? []);
+
+        wp_send_json([
+            'cities' => $res->success ? $res->data : []
+        ]);
     }
 
     public function get_zone_areas() {
@@ -163,6 +205,9 @@ class Ajax {
         $zone = sanitize_text_field($_POST['zone'] ?? '');
         $res = PathaoAPI::get_areas($zone);
 
-        wp_send_json_success($res->data ?? []);
+        wp_send_json([
+            'areas' => $res->success ? $res->data : []
+        ]);
     }
+
 }

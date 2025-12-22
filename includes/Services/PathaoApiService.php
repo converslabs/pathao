@@ -555,6 +555,8 @@ private function validate_bulk_order(array $o)
             "aladdin/api/v1/orders/{$consignment_id}/info"
         );
 
+error_log($res);
+
         if ($err = $this->has_errors($res)) return $err;
 
         $body = json_decode(wp_remote_retrieve_body($res));
