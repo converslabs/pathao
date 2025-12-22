@@ -164,8 +164,7 @@ class PathaoApiService
                 'name' => $c->city_name
             ];
         } 
-        set_transient($transient_key, $list, 12 * HOUR_IN_SECONDS);
-         error_log('[Pathao City List] ' . print_r($body, true));
+        set_transient($transient_key, $list, 12 * HOUR_IN_SECONDS); 
 
         return (object)['success' => true, 'data' => $list];
     } 
@@ -192,13 +191,7 @@ class PathaoApiService
             return $err;
         }
 
-        $body = json_decode(wp_remote_retrieve_body($res));
-
-        error_log('================ Pathao Zone List API ================');
-        error_log('City ID: ' . $city_id);
-        error_log('HTTP Code: ' . wp_remote_retrieve_response_code($res));
-        error_log('Raw Response: ' . print_r($body, true));
-        error_log('====================================================');
+        $body = json_decode(wp_remote_retrieve_body($res)); 
          
         if (
             empty($body->data->data) ||
@@ -224,46 +217,7 @@ class PathaoApiService
             'success' => true,
             'data'    => $list
         ];
-    }
-
-
-
- 
-
-
-
-
-
-    /*-----------------------------------------
-    | GET areas inside a particular zone
-    ------------------------------------------*/
-    // public function get_zones($city_id)
-    // {
-    //     $res = $this->request(
-    //         'wp_remote_get',
-    //         "aladdin/api/v1/zones?city_id={$city_id}"
-    //     );
-
-    //     if ($err = $this->has_errors($res)) {
-    //         return $err;
-    //     }
-
-    //     $body = json_decode(wp_remote_retrieve_body($res));
-
-    //     if (!isset($body->data) || !is_array($body->data)) {
-    //         return [];
-    //     }
-
-    //     $out = [];
-    //     foreach ($body->data->data as $z) {
-    //         $out[] = [
-    //             'id'   => $z->zone_id,
-    //             'name' => $z->zone_name,
-    //         ];
-    //     }
-
-    //     return $out;
-    // }
+    } 
 
     /*-----------------------------------------
     | GET AREAS
@@ -421,9 +375,7 @@ class PathaoApiService
             'amount_to_collect'  => $order->get_payment_method() === 'cod'
                 ? (int)$order->get_total()
                 : 0,
-        ];
-
-        error_log('[Pathao] Payload: ' . print_r($payload, true));
+        ]; 
 
         /* Validate payload */
         $validate = $this->validate_order_payload($payload);
@@ -652,32 +604,68 @@ class PathaoApiService
     /*-----------------------------------------
     | PRICE CALCULATION
     ------------------------------------------*/
-    public function price_calculation($args)
-    {
-        $body = wp_parse_args($args, [
-            'store_id'      => pathao_store_id(),
-            'item_type'     => 2,
-            'delivery_type' => 48,
-        ]);
+     public function price_calculation($args)
+        {
+            error_log("hello price_calculation");
+            
+            $body = wp_parse_args($args, [
+                'store_id'        => pathao_store_id(),
+                'item_type'       => 2,
+                'delivery_type'   => 48,
+                'item_weight'     => 0.5,
+                'recipient_city'  => 0,
+                'recipient_zone'  => 0,
+            ]);
 
-        $res = $this->request(
-            'wp_remote_post',
-            'aladdin/api/v1/merchant/price-plan',
-            ['body' => json_encode($body)]
-        );
+            //   Log request payload
+            error_log('[Pathao Price] Request payload: ' . wp_json_encode($body));
 
-        if ($err = $this->has_errors($res)) return $err;
+            $res = $this->request(
+                'wp_remote_post',
+                'aladdin/api/v1/merchant/price-plan',
+                ['body' => wp_json_encode($body)]
+            );
 
-        $d = json_decode(wp_remote_retrieve_body($res));
+            // Transport / API-level errors
+            if ($err = $this->has_errors($res)) {
+                error_log('[Pathao Price] API error: ' . print_r($err, true));
+                return $err;
+            }
 
-        return (object)[
-            'success' => true,
-            'data' => (object)[
-                'price'       => $d->data->price,
-                'cod_enabled' => $d->data->cod_enabled
-            ]
-        ];
-    }
+            $status_code = wp_remote_retrieve_response_code($res);
+            $raw_body    = wp_remote_retrieve_body($res);
+
+            //  Log raw response
+            error_log('[Pathao Price] HTTP ' . $status_code . ' Response: ' . $raw_body);
+
+            $d = json_decode($raw_body);
+
+            // Malformed response safety check
+            if (empty($d->data)) {
+                error_log('[Pathao Price] Malformed response: ' . print_r($d, true));
+                return (object)[
+                    'success'  => false,
+                    'messages' => ['Price data missing from Pathao response'],
+                    'raw'      => $d,
+                ];
+            }
+
+            return (object)[
+                'success' => true,
+                'data'    => (object)[
+                    'price'             => $d->data->price ?? 0,
+                    'discount'          => $d->data->discount ?? 0,
+                    'promo_discount'    => $d->data->promo_discount ?? 0,
+                    'plan_id'           => $d->data->plan_id ?? null,
+                    'cod_enabled'       => $d->data->cod_enabled ?? 0,
+                    'cod_percentage'    => $d->data->cod_percentage ?? 0,
+                    'additional_charge' => $d->data->additional_charge ?? 0,
+                    'final_price'       => $d->data->final_price ?? 0,
+                ],
+            ];
+        }
+
+
 
     /*-----------------------------------------
     | TOKEN GENERATION

@@ -1,104 +1,38 @@
 jQuery(document).ready(function ($) {
 
-    if (typeof pathao_vars === 'undefined') {
-        console.error('pathao_vars is missing');
-        return;
-    }
+const AJAX_URL = pathao_vars.ajax_url;
+const NONCE = pathao_vars.nonce;
 
-    const AJAX_URL = pathao_vars.ajax_url;
-    const NONCE = pathao_vars.nonce;
+function calculatePathaoPrice() {
+    const cityId = $('#ptc-city').val();
+    const zoneId = $('#ptc-zone').val();
+    const weight = $('#ptc-weight').val();
+    const deliveryType = $('#ptc-delivery-type').val();
+    const itemType = $('#ptc-item-type').val();
 
-    /* =====================================================
-     * BULK SEND ORDERS
-     * ===================================================== */
-    $(document).on('click', '#pathao-bulk-send', function (e) {
-        e.preventDefault();
+    if (!cityId || !zoneId || !weight) return;
 
-        let orderIds = [];
-
-        $('.pathao-order-checkbox:checked').each(function () {
-            orderIds.push($(this).val());
-        });
-
-        if (orderIds.length === 0) {
-            alert('Please select at least one order');
-            return;
+    $.post(AJAX_URL, {
+        action: 'pathao_price_calculation',
+        nonce: NONCE,
+        city_id: cityId,
+        zone_id: zoneId,
+        item_weight: weight,
+        delivery_type: deliveryType,
+        item_type: itemType
+    }, function (res) {
+        console.log('Price response:', res);
+        if (res.success) {
+            $('#ptc-collectable').val(res.data.final_price);
         }
-
-        if (!confirm('Send selected orders to Pathao?')) {
-            return;
-        }
-
-        $.ajax({
-            type: 'POST',
-            url: AJAX_URL,
-            dataType: 'json',
-            data: {
-                action: 'send_bulk_orders_to_pathao',
-                nonce: NONCE,
-                order_ids: orderIds
-            }
-        })
-        .done(function (res) {
-            if (res.success) {
-                alert(res.data.message);
-                location.reload();
-            } else {
-                alert(res.data?.message || 'Bulk order failed');
-            }
-        })
-        .fail(function (xhr) {
-            console.error(xhr.responseText);
-            alert('AJAX request failed');
-        });
     });
+}
 
-    /* =====================================================
-     * SINGLE ORDER (MODAL BUTTON)
-     * ===================================================== */
-    $(document).on('click', '.ptc-open-modal-button', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const orderId = $(this).data('order-id');
-        console.log('Opening Pathao modal for order:', orderId);
-
-        // popup.js handles the modal logic
-        $(document).trigger('pathao:openModal', [orderId]);
-    });
-
-    /* =====================================================
-    * SYNC ORDER STATUS (MANUAL)
-    * ===================================================== */
-    $(document).on('click', '#pathao-sync-status', function (e) {
-        e.preventDefault();
-
-        if (!confirm('Sync Pathao order statuses now?')) {
-            return;
-        }
-
-        $.ajax({
-            type: 'POST',
-            url: AJAX_URL,
-            dataType: 'json',
-            data: {
-                action: 'pathao_sync_order_status',
-                nonce: NONCE
-            }
-        })
-        .done(function (res) {
-            if (res.success) {
-                alert(res.data.message);
-                location.reload();
-            } else {
-                alert(res.data?.message || 'Sync failed');
-            }
-        })
-        .fail(function () {
-            alert('AJAX request failed');
-        });
-    });
-
+$(document).on(
+    'change',
+    '#ptc-city, #ptc-zone, #ptc-weight, #ptc-delivery-type, #ptc-item-type',
+    calculatePathaoPrice
+);
 
 });
 
@@ -146,3 +80,31 @@ $(document).on('change', '#ptc-zone', function () {
         }
     });
 });
+
+
+function calculatePathaoPrice() {
+    const cityId = $('#ptc-city').val();
+    const zoneId = $('#ptc-zone').val();
+    const weight = $('#ptc-weight').val();
+    const deliveryType = $('#ptc-delivery-type').val();
+    const itemType = $('#ptc-item-type').val();
+
+    if (!cityId || !zoneId || !weight) return;
+
+    $.post(AJAX_URL, {
+        action: 'pathao_price_calculation',
+        nonce: NONCE,
+        city_id: cityId,
+        zone_id: zoneId,
+        item_weight: weight,
+        delivery_type: deliveryType,
+        item_type: itemType
+    }, function (res) {
+         console.log(res); // 👈 ADD THIS
+        if (res.success) {
+            $('#ptc-collectable').val(res.data.final_price);
+        }
+    });
+}
+
+$(document).on('change', '#ptc-city, #ptc-zone, #ptc-weight, #ptc-delivery-type, #ptc-item-type', calculatePathaoPrice);
