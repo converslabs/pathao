@@ -4,7 +4,7 @@
  * Plugin Name: Pathao Integration for WooCommerce
  * Plugin URI: https://converslabs.com/products/pathao/
  * Description: Pathao integration for WooCommerce
- * Version: 1.1.1
+ * Version: 2.0
  * Contributors: converswp, shamsbd71
  * Author: ConversWP
  * Author URI: https://converslabs.com

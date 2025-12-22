@@ -236,31 +236,41 @@
                 ]);
             }
             
-             public function price_calculation()
-            {
-                check_ajax_referer('pathao_nonce', 'nonce');
+             public function price_calculation() {
 
-                $api = new PathaoApiService();
+                    check_ajax_referer('pathao_nonce', 'nonce');
 
-                $args = [
-                    'store_id' => (int) ($settings['store'] ?? 0),
-                    'item_type' => absint($_POST['item_type'] ?? 2),
-                    'delivery_type' => absint($_POST['delivery_type'] ?? 48),
-                    'item_weight' => (float) ($_POST['item_weight'] ?? 0.5),
-                    'recipient_city' => absint($_POST['city_id'] ?? 0),
-                    'recipient_zone' => absint($_POST['zone_id'] ?? 0),
-                ];
+                    $api = new PathaoApiService();
 
-                error_log('[AJAX Price Args] ' . wp_json_encode($args));
+                    //  IMPORTANT: keys now match JS exactly
+                    $args = [
+                        'store_id'        => (int) get_option('pathao_store_id', 0),
+                        'item_type'       => absint($_POST['item_type'] ?? 2),
+                        'delivery_type'   => absint($_POST['delivery_type'] ?? 48),
+                        'item_weight'     => (float) ($_POST['item_weight'] ?? 0.5),
+                        'recipient_city'  => absint($_POST['recipient_city'] ?? 0),
+                        'recipient_zone'  => absint($_POST['recipient_zone'] ?? 0),
+                    ];
 
-                $res = $api->price_calculation($args);
+                    error_log('[AJAX Price Args] ' . wp_json_encode($args));
 
-                if (empty($res->success)) {
-                    error_log('[AJAX Price Failed] ' . print_r($res, true));
-                    wp_send_json_error(['message' => 'Price calculation failed']);
-                }
+                    //  Block invalid requests early
+                    if (!$args['recipient_city'] || !$args['recipient_zone']) {
+                        wp_send_json_error([
+                            'message' => 'City or Zone missing'
+                        ]);
+                    }
 
-                wp_send_json_success($res->data);
+                    $res = $api->price_calculation($args);
+
+                    if (empty($res->success)) {
+                        error_log('[AJAX Price Failed] ' . print_r($res, true));
+                        wp_send_json_error([
+                            'message' => $res->messages[0] ?? 'Price calculation failed'
+                        ]);
+                    }
+
+                    wp_send_json_success($res->data);
             }
 
     

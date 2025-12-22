@@ -81,7 +81,7 @@ Sometimes, especially when new versions are released, it might only require some
 
 == Changelog ==
  
-= version 1.1.1 =
+= version 2.0 =
 * **feature:**  Pathao Shipping Integration for WooCommerce.
 * **update:** add separate Pathao Shipping Details Page 
 * **fix:** add translation and sanitization.

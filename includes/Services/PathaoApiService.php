@@ -604,10 +604,7 @@ class PathaoApiService
     /*-----------------------------------------
     | PRICE CALCULATION
     ------------------------------------------*/
-     public function price_calculation($args)
-        {
-            error_log("hello price_calculation");
-            
+     public function price_calculation($args) { 
             $body = wp_parse_args($args, [
                 'store_id'        => pathao_store_id(),
                 'item_type'       => 2,
@@ -617,14 +614,13 @@ class PathaoApiService
                 'recipient_zone'  => 0,
             ]);
 
-            //   Log request payload
-            error_log('[Pathao Price] Request payload: ' . wp_json_encode($body));
 
             $res = $this->request(
                 'wp_remote_post',
-                'aladdin/api/v1/merchant/price-plan',
+                'aladdin/api/v1/price-plan',
                 ['body' => wp_json_encode($body)]
             );
+                error_log('[Pathao Price] API res: ' . print_r($res, true));
 
             // Transport / API-level errors
             if ($err = $this->has_errors($res)) {

@@ -65,33 +65,36 @@ jQuery(document).ready(function ($) {
     /* ---------------------------------------------------
      * Price Calculation
      * --------------------------------------------------- */
-    function calculatePathaoPrice() {
-        const city = $('#ptc-city').val();
-        const zone = $('#ptc-zone').val();
-        const weight = $('#ptc-weight').val() || 0.5;
-        const deliveryType = $('#ptc-delivery-type').val() || 48;
-        const itemType = $('#ptc-item-type').val() || 2;
+     function calculatePathaoPrice() {
+                    const city = $('#ptc-city').val();
+                    const zone = $('#ptc-zone').val();
+                    const weight = $('#ptc-weight').val() || 0.5;
+                    const deliveryType = $('#ptc-delivery-type').val() || 48;
+                    const itemType = $('#ptc-item-type').val() || 2;
 
-        if (!city || !zone) return;
+                    if (!city || !zone) return;
 
-        $('#ptc-collectable').val('Calculating…');
+                    ajaxPost(
+                        'pathao_price_calculation',
+                        {
+                            recipient_city: city,
+                            recipient_zone: zone,
+                            item_weight: weight,
+                            delivery_type: deliveryType,
+                            item_type: itemType
+                        },
+                        function (res) {
+                            console.log('Price response:', res);
 
-        ajaxPost('pathao_price_calculation', {
-            recipient_city: city,
-            recipient_zone: zone,
-            item_weight: weight,
-            delivery_type: deliveryType,
-            item_type: itemType
-        }, function (res) {
-            console.log('Price response:', res);
+                            if (res.success && res.data) {
+                                $('#ptc-collectable').val(res.data.final_price);
+                            } else {
+                                $('#ptc-collectable').val('—');
+                            }
+                        }
+                    );
+        }
 
-            if (res.success && res.data) {
-                $('#ptc-collectable').val(res.data.final_price);
-            } else {
-                $('#ptc-collectable').val('—');
-            }
-        });
-    }
 
     $(document).on(
         'change',
