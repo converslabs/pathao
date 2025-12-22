@@ -1,6 +1,4 @@
-jQuery(document).ready(function ($) {
-
-    alert("Hello popup js");
+jQuery(document).ready(function ($) { 
     if (typeof pathao_vars === "undefined") {
         console.error("pathao_vars is missing");
         return;
@@ -26,8 +24,7 @@ jQuery(document).ready(function ($) {
         e.preventDefault();
         e.stopPropagation();
         openPathaoModal($(this).data("order-id"));
-    });
-
+    }); 
 
     $(document).on("click", "#ptc-send-cancel", closePathaoModal);
 

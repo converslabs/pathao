@@ -2,7 +2,7 @@
   <div class="ptc-modal-content">
 
     <div class="ptc-header">
-      <h2> <?php esc_html_e( 'A Send Order to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </h2>
+      <h2> <?php esc_html_e( 'Send Order to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </h2>
       <img src=" " alt="Shop Logo">
     </div>
 

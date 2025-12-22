@@ -502,78 +502,93 @@ class PathaoApiService
         'data' => $body->data->data[0]
         ];
     }
-private function validate_bulk_order(array $o)
-{
-    $required = [
-        'store_id',
-        'recipient_name',
-        'recipient_phone',
-        'recipient_address',
-        'delivery_type',
-        'item_type',
-        'item_quantity',
-        'item_weight',
-        'amount_to_collect',
-    ];
+    private function validate_bulk_order(array $o)
+    {
+        $required = [
+            'store_id',
+            'recipient_name',
+            'recipient_phone',
+            'recipient_address',
+            'delivery_type',
+            'item_type',
+            'item_quantity',
+            'item_weight',
+            'amount_to_collect',
+        ];
 
-    foreach ($required as $field) {
-        if (!isset($o[$field]) || $o[$field] === '') {
-            return "Missing field: {$field}";
+        foreach ($required as $field) {
+            if (!isset($o[$field]) || $o[$field] === '') {
+                return "Missing field: {$field}";
+            }
         }
-    }
 
-    if (strlen($o['recipient_phone']) !== 11) {
-        return 'Recipient phone must be 11 digits';
-    }
+        if (strlen($o['recipient_phone']) !== 11) {
+            return 'Recipient phone must be 11 digits';
+        }
 
-    if (strlen($o['recipient_address']) < 10) {
-        return 'Recipient address too short';
-    }
+        if (strlen($o['recipient_address']) < 10) {
+            return 'Recipient address too short';
+        }
 
-    if ($o['item_weight'] < 0.5 || $o['item_weight'] > 10) {
-        return 'Invalid item weight';
-    }
+        if ($o['item_weight'] < 0.5 || $o['item_weight'] > 10) {
+            return 'Invalid item weight';
+        }
 
-    return true;
-}
+        return true;
+    }
 
 
     /*-----------------------------------------
     | GET ORDER SHORT INFO
     ------------------------------------------*/
-    public function get_order_info(string $consignment_id): stdClass
+    public function get_order_info(string $consignment_id): \stdClass
     {
         if (empty($consignment_id)) {
-            return (object)[
+            return (object) [
                 'success' => false,
-                'messages' => ['Consignment ID is required']
+                'messages' => ['Consignment ID is required'],
             ];
         }
 
-        $res = $this->request(
+        $response = $this->request(
             'wp_remote_get',
             "aladdin/api/v1/orders/{$consignment_id}/info"
         );
 
-error_log($res);
-
-        if ($err = $this->has_errors($res)) return $err;
-
-        $body = json_decode(wp_remote_retrieve_body($res));
-
-        if (empty($body->data)) {
-            return (object)[
+        if (is_wp_error($response)) {
+            return (object) [
                 'success' => false,
-                'messages' => ['No order data returned'],
-                'raw_response' => $body
+                'messages' => [$response->get_error_message()],
             ];
         }
 
-        return (object)[
+        $status_code = wp_remote_retrieve_response_code($response);
+        $body = json_decode(wp_remote_retrieve_body($response));
+
+        error_log('[Pathao Order Info] HTTP ' . $status_code);
+        error_log(print_r($body, true));
+
+        if ($status_code !== 200 || empty($body->data)) {
+            return (object) [
+                'success' => false,
+                'messages' => ['Invalid response from Pathao'],
+                'raw' => $body,
+            ];
+        }
+
+        return (object) [
             'success' => true,
-            'data' => $body->data
+            'data' => (object) [
+                'consignment_id' => $body->data->consignment_id ?? '',
+                'merchant_order_id' => $body->data->merchant_order_id ?? '',
+                'order_status' => $body->data->order_status ?? '',
+                'order_status_slug' => $body->data->order_status_slug ?? '',
+                'updated_at' => $body->data->updated_at ?? '',
+                'invoice_id' => $body->data->invoice_id ?? null,
+            ],
         ];
-    }  
+    }
+ 
     /*-----------------------------------------
     | PRICE CALCULATION
     ------------------------------------------*/

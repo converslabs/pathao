@@ -81,30 +81,30 @@
             {
                 ?>
                 <div class="wrap">
-                    <h1 class="wp-heading-inline">Pathao Courier Order Page</h1>
-                    <p class="description">Manage your deliveries without any distraction</p>
+                    <h1 class="wp-heading-inline"><?php esc_html_e( 'Pathao Courier Order Page', 'integration-of-pathao-for-woocommerce' ); ?></h1>
+                    <p class="description"><?php esc_html_e( 'Manage your deliveries without any distraction', 'integration-of-pathao-for-woocommerce' ); ?></p>
                     <hr class="wp-header-end">
 
                     <form method="get" style="margin: 20px 0;">
                         <input type="hidden" name="page" value="pathao-orders-menu-slug">
 
                         <label style="margin-right:10px;">
-                            Search orders:
+                            <?php esc_html_e( 'Search orders:', 'integration-of-pathao-for-woocommerce' ); ?>
                             <input type="search" name="s" placeholder="Order ID, Customer, Pathao ID" value="<?php echo esc_attr($_GET['s'] ?? ''); ?>">
                         </label>
 
                         <label style="margin-right:10px;">
-                            From Date
+                            <?php esc_html_e( 'From Date', 'integration-of-pathao-for-woocommerce' ); ?>
                             <input type="date" name="from_date" value="<?php echo esc_attr($_GET['from_date'] ?? ''); ?>">
                         </label>
 
                         <label style="margin-right:10px;">
-                            To Date
+                            <?php esc_html_e( 'To Date', 'integration-of-pathao-for-woocommerce' ); ?>
                             <input type="date" name="to_date" value="<?php echo esc_attr($_GET['to_date'] ?? ''); ?>">
                         </label>
 
                         <label style="margin-right:10px;">
-                            Items Per Page
+                            <?php esc_html_e( 'Items Per Page', 'integration-of-pathao-for-woocommerce' ); ?>
                             <select name="per_page">
                                 <?php
                                 $per_page = $_GET['per_page'] ?? 20;
@@ -119,14 +119,22 @@
                                 ?>
                             </select>
                         </label>
-
-                        <button class="button">Filter</button>
+                    <button class="button">
+                        <?php esc_html_e( 'Filter', 'integration-of-pathao-for-woocommerce' ); ?>
+                    </button> 
                     </form>
 
                     <?php $this->render_pathao_orders_table(); ?>
                 </div>
                 <button  id="pathao-bulk-send" class="button button-primary"  style="margin: 10px 0;" > 
-                    Send Selected Orders to Pathao  </button>
+                    <?php esc_html_e( 'Send Selected Orders to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </button>
+
+                    <button id="pathao-sync-status"
+                        class="button"
+                        style="margin:10px 0 0 10px;">
+                    🔄 Sync Order Status
+                </button>
+
 
                 <?php
             }
@@ -171,13 +179,13 @@
                     <thead>
                         <tr>
                             <th><input type="checkbox"></th>
-                            <th>Order</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Total</th>
-                            <th>Pathao Courier</th>
-                            <th>Pathao Status</th>
-                            <th>Delivery Fee</th>
+                            <th><?php esc_html_e( 'Order', 'integration-of-pathao-for-woocommerce' ); ?> </th>
+                            <th><?php esc_html_e( 'Date', 'integration-of-pathao-for-woocommerce' ); ?> </th>
+                            <th><?php esc_html_e( 'Status', 'integration-of-pathao-for-woocommerce' ); ?> </th>
+                            <th><?php esc_html_e( 'Total', 'integration-of-pathao-for-woocommerce' ); ?> </th>
+                            <th><?php esc_html_e( 'Pathao Courier', 'integration-of-pathao-for-woocommerce' ); ?> </th>
+                            <th><?php esc_html_e( 'Pathao Status', 'integration-of-pathao-for-woocommerce' ); ?> </th>
+                            <th><?php esc_html_e( 'Delivery Fee', 'integration-of-pathao-for-woocommerce' ); ?> </th>
                         </tr>
                     </thead>
 
@@ -244,7 +252,7 @@
                             <?php endforeach; ?>
                         <?php else : ?>
                             <tr>
-                                <td colspan="8">No orders found.</td>
+                                <td colspan="8"><?php esc_html_e( 'No orders found.', 'integration-of-pathao-for-woocommerce' ); ?> </td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

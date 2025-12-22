@@ -67,4 +67,37 @@ jQuery(document).ready(function ($) {
         $(document).trigger('pathao:openModal', [orderId]);
     });
 
+    /* =====================================================
+    * SYNC ORDER STATUS (MANUAL)
+    * ===================================================== */
+    $(document).on('click', '#pathao-sync-status', function (e) {
+        e.preventDefault();
+
+        if (!confirm('Sync Pathao order statuses now?')) {
+            return;
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: AJAX_URL,
+            dataType: 'json',
+            data: {
+                action: 'pathao_sync_order_status',
+                nonce: NONCE
+            }
+        })
+        .done(function (res) {
+            if (res.success) {
+                alert(res.data.message);
+                location.reload();
+            } else {
+                alert(res.data?.message || 'Sync failed');
+            }
+        })
+        .fail(function () {
+            alert('AJAX request failed');
+        });
+    });
+
+
 });
