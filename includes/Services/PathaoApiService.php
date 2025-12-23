@@ -8,113 +8,136 @@ class PathaoApiService
 {
 
 	
-    /*-----------------------------------------
-    | BASE URL
-    ------------------------------------------*/
-    private function get_base_url(): string
-    {
-        return get_option('pathao_sandbox_mode')
-            ? 'https://courier-api-sandbox.pathao.com/'
-            : 'https://api-hermes.pathao.com/';
-    }
+	/*-----------------------------------------
+	| BASE URL
+	------------------------------------------*/
+	private function get_base_url(): string {
+		return get_option( 'pathao_sandbox_mode' )
+			? 'https://courier-api-sandbox.pathao.com/'
+			: 'https://api-hermes.pathao.com/';
+	}
 
-    /*-----------------------------------------
-    | ACCESS & REFRESH TOKENS
-    ------------------------------------------*/
-    private function ensure_access_token()
-    {
-        $token = get_option('pathao_access_token');
-        if (!$token) {
-            $new = $this->refresh_tokens();
-            if ($new && $new->success) {
-                update_option('pathao_access_token', $new->data->access_token);
-                update_option('pathao_refresh_token', $new->data->refresh_token);
-                return $new->data->access_token;
-            }
-            return false;
-        }
+	/*-----------------------------------------
+	| ACCESS & REFRESH TOKENS
+	| - Used for authenticated merchant calls
+	| - Does NOT call authenticated wrapper when
+	|   (re)issuing tokens to avoid recursion.
+	------------------------------------------*/
+	private function ensure_access_token() {
+		$token = get_option( 'pathao_access_token' );
 
-        return $token;
-    }
+		if ( ! empty( $token ) ) {
+			return $token;
+		}
 
-    /*-----------------------------------------
-    | REQUEST WRAPPER (AUTO TOKEN REFRESH)
-    ------------------------------------------*/
-    private function request($func, string $path, array $args = [])
-    {
-        $token = $this->ensure_access_token();
+		// Try to refresh using stored refresh_token.
+		$client_id     = get_option( 'pathao_client_id' );
+		$client_secret = get_option( 'pathao_client_secret' );
+		$refresh_token = get_option( 'pathao_refresh_token' );
 
-        if (!$token) {
-            return ['error' => 'token_missing'];
-        }
+		if ( ! $client_id || ! $client_secret || ! $refresh_token ) {
+			return false;
+		}
 
-        $default_headers = [
-            'Authorization' => 'Bearer ' . $token,
-            'Content-Type'  => 'application/json',
-            'Accept'        => 'application/json',
-        ];
+		$refreshed = $this->refresh_tokens();
 
-        $final_args = array_merge(['headers' => $default_headers], $args);
+		if ( $refreshed && ! empty( $refreshed->success ) ) {
+			update_option( 'pathao_access_token', $refreshed->data->access_token );
+			update_option( 'pathao_refresh_token', $refreshed->data->refresh_token );
 
-        $url = $this->get_base_url() . ltrim($path, '/');
+			return $refreshed->data->access_token;
+		}
 
-        $response = $func($url, $final_args);
+		return false;
+	}
 
-        // Pathao expired token → 401
-        if (wp_remote_retrieve_response_code($response) === 401) {
+	/*-----------------------------------------
+	| REQUEST WRAPPER (AUTO TOKEN REFRESH)
+	| - For endpoints that REQUIRE Bearer token
+	------------------------------------------*/
+	private function request( $func, string $path, array $args = [] ) {
+		$token = $this->ensure_access_token();
 
-            $new = $this->refresh_tokens();
-            if ($new && $new->success) {
-                update_option('pathao_access_token', $new->data->access_token);
-                update_option('pathao_refresh_token', $new->data->refresh_token);
+		if ( ! $token ) {
+			return array( 'error' => 'token_missing' );
+		}
 
-                $final_args['headers']['Authorization'] = 'Bearer ' . $new->data->access_token;
+		$default_headers = array(
+			'Authorization' => 'Bearer ' . $token,
+			'Content-Type'  => 'application/json',
+			'Accept'        => 'application/json',
+		);
 
-                $response = $func($url, $final_args);
-            }
-        }
+		$final_args = array_merge( array( 'headers' => $default_headers ), $args );
 
-        return $response;
-    }
+		$url = $this->get_base_url() . ltrim( $path, '/' );
 
-    /*-----------------------------------------
-    | ERROR HANDLER
-    ------------------------------------------*/
-    private function has_errors($res)
-    {
-        $code = wp_remote_retrieve_response_code($res);
-        $data = new stdClass();
+		$response = $func( $url, $final_args );
 
-        if ($code === 401) {
-            $data->success = false;
-            $data->messages = ['Unauthorized access token'];
-            return $data;
-        }
+		// Pathao expired token → 401, try once with refreshed token.
+		if ( wp_remote_retrieve_response_code( $response ) === 401 ) {
+			$new = $this->refresh_tokens();
+			if ( $new && ! empty( $new->success ) ) {
+				update_option( 'pathao_access_token', $new->data->access_token );
+				update_option( 'pathao_refresh_token', $new->data->refresh_token );
 
-        if ($code === 422) {
-            $body = json_decode(wp_remote_retrieve_body($res));
-            $messages = [];
+				$final_args['headers']['Authorization'] = 'Bearer ' . $new->data->access_token;
 
-            if (!empty($body->errors)) {
-                foreach ($body->errors as $err) {
-                    if (is_array($err)) $messages = array_merge($messages, $err);
-                    else $messages[] = $err;
-                }
-            }
+				$response = $func( $url, $final_args );
+			}
+		}
 
-            $data->success = false;
-            $data->messages = $messages;
-            return $data;
-        }
+		return $response;
+	}
 
-        if ($code < 200 || $code > 299) {
-            $data->success = false;
-            $data->messages = ['Something went wrong'];
-            return $data;
-        }
+	/*-----------------------------------------
+	| ERROR HANDLER
+	| - Reused for both token and data endpoints
+	------------------------------------------*/
+	private function has_errors( $res ) {
+		if ( is_wp_error( $res ) ) {
+			$data            = new stdClass();
+			$data->success   = false;
+			$data->messages  = array( $res->get_error_message() );
+			return $data;
+		}
 
-        return false;
-    }
+		$code = wp_remote_retrieve_response_code( $res );
+		$data = new stdClass();
+
+		if ( 401 === $code ) {
+			$data->success  = false;
+			$data->messages = array( 'Unauthorized access token' );
+			return $data;
+		}
+
+		if ( 422 === $code ) {
+			$body     = json_decode( wp_remote_retrieve_body( $res ) );
+			$messages = array();
+
+			if ( ! empty( $body->errors ) ) {
+				foreach ( $body->errors as $err ) {
+					if ( is_array( $err ) ) {
+						$messages = array_merge( $messages, $err );
+					} else {
+						$messages[] = $err;
+					}
+				}
+			}
+
+			$data->success  = false;
+			$data->messages = $messages;
+			return $data;
+		}
+
+		if ( $code < 200 || $code > 299 ) {
+			$data->success  = false;
+			$data->messages = array( 'Something went wrong' );
+			return $data;
+		}
+
+		return false;
+	}
 
     /*-----------------------------------------
     | TRANSIENT CHECK
@@ -136,147 +159,151 @@ class PathaoApiService
     /*-----------------------------------------
     | GET CITIES
     ------------------------------------------*/
-    public function get_cities()
-    {
-        $transient_key = '_sdevs_pathao_cities';
+	public function get_cities() {
+		$transient_key = '_sdevs_pathao_cities';
 
-        if ($cached = $this->has_transient($transient_key)) {
-            return $cached;
-        }
+		if ( $cached = $this->has_transient( $transient_key ) ) {
+			return $cached;
+		}
 
-        $res = $this->request('wp_remote_get', 'aladdin/api/v1/cities');
+		$res = $this->request( 'wp_remote_get', 'aladdin/api/v1/cities' );
 
-        if ($err = $this->has_errors($res)) {
-            return $err;
-        }
+		if ( $err = $this->has_errors( $res ) ) {
+			return $err;
+		}
 
-        $body = json_decode(wp_remote_retrieve_body($res));
+		$body = json_decode( wp_remote_retrieve_body( $res ) );
 
+		if ( ! isset( $body->data->data ) ) {
+			return (object) array(
+				'success'  => false,
+				'messages' => array( 'Cities data malformed' ),
+			);
+		}
 
-        if (!isset($body->data->data)) {
-            return (object)[
-                'success' => false,
-                'messages' => ['Cities data malformed']
-            ];
-        }
+		$list = array();
+		foreach ( $body->data->data as $c ) {
+			$list[] = (object) array(
+				'id'   => $c->city_id,
+				'name' => $c->city_name,
+			);
+		}
 
-        $list = [];
-        foreach ($body->data->data as $c) {
-            $list[] = (object)[
-                'id'   => $c->city_id,
-                'name' => $c->city_name
-            ];
-        }
+		set_transient( $transient_key, $list, 12 * HOUR_IN_SECONDS );
 
-        set_transient($transient_key, $list, 12 * HOUR_IN_SECONDS);
-
-        return (object)['success' => true, 'data' => $list];
-    }
+		return (object) array(
+			'success' => true,
+			'data'    => $list,
+		);
+	}
 
     /*-----------------------------------------
     | GET ZONES
     ------------------------------------------*/
-    public function get_zones($city_id)
-    {
-        $res = $this->request(
-            'wp_remote_get',
-            "aladdin/api/v1/zones?city_id={$city_id}"
-        );
+	public function get_zones( $city_id ) {
+		$res = $this->request(
+			'wp_remote_get',
+			"aladdin/api/v1/zones?city_id={$city_id}"
+		);
 
-        if ($err = $this->has_errors($res)) {
-            return $err;
-        }
+		if ( $err = $this->has_errors( $res ) ) {
+			return $err;
+		}
 
-        $body = json_decode(wp_remote_retrieve_body($res));
+		$body = json_decode( wp_remote_retrieve_body( $res ) );
 
-        if (!isset($body->data->data)) {
-            return [];
-        }
+		if ( ! isset( $body->data->data ) ) {
+			return array();
+		}
 
-        $out = [];
-        foreach ($body->data->data as $z) {
-            $out[] = [
-                'id'   => $z->zone_id,
-                'name' => $z->zone_name,
-            ];
-        }
+		$out = array();
+		foreach ( $body->data->data as $z ) {
+			$out[] = array(
+				'id'   => $z->zone_id,
+				'name' => $z->zone_name,
+			);
+		}
 
-        return $out;
-    }
+		return $out;
+	}
 
     /*-----------------------------------------
     | GET AREAS
     ------------------------------------------*/
-    public function get_areas(int $zone_id): stdClass
-    {
-        $key = "_sdevs_pathao_zone_{$zone_id}_areas";
+	public function get_areas( int $zone_id ): stdClass {
+		$key = "_sdevs_pathao_zone_{$zone_id}_areas";
 
-        if ($c = $this->has_transient($key)) {
-            return $c;
-        }
+		if ( $c = $this->has_transient( $key ) ) {
+			return $c;
+		}
 
-        $res = $this->request(
-            'wp_remote_get',
-            "aladdin/api/v1/zones/{$zone_id}/area-list"
-        );
+		$res = $this->request(
+			'wp_remote_get',
+			"aladdin/api/v1/zones/{$zone_id}/area-list"
+		);
 
-        if ($err = $this->has_errors($res)) return $err;
+		if ( $err = $this->has_errors( $res ) ) {
+			return $err;
+		}
 
-        $body = json_decode(wp_remote_retrieve_body($res));
+		$body = json_decode( wp_remote_retrieve_body( $res ) );
 
-        $list = [];
-        foreach ($body->data->data as $a) {
-            $list[] = (object)[
-                'id'   => $a->area_id,
-                'name' => $a->area_name,
-            ];
-        }
+		$list = array();
+		foreach ( $body->data->data as $a ) {
+			$list[] = (object) array(
+				'id'   => $a->area_id,
+				'name' => $a->area_name,
+			);
+		}
 
-        set_transient($key, $list, 12 * HOUR_IN_SECONDS);
+		set_transient( $key, $list, 12 * HOUR_IN_SECONDS );
 
-        return (object)['success' => true, 'data' => $list];
-    }
+		return (object) array(
+			'success' => true,
+			'data'    => $list,
+		);
+	}
 
     /*-----------------------------------------
     | GET STORES
     ------------------------------------------*/
-    public function get_stores(): stdClass
-    {
-        $key = '_pathao_store_id';
+	public function get_stores(): stdClass {
+		$key = '_pathao_store_id';
 
-        if ($c = $this->has_transient($key)) {
-            return $c;
-        }
+		if ( $c = $this->has_transient( $key ) ) {
+			return $c;
+		}
 
-        $res = $this->request('wp_remote_get', 'aladdin/api/v1/stores');
+		$res = $this->request( 'wp_remote_get', 'aladdin/api/v1/stores' );
 
-        if ($err = $this->has_errors($res)) {
-            return $err;
-        }
+		if ( $err = $this->has_errors( $res ) ) {
+			return $err;
+		}
 
-        $body = json_decode(wp_remote_retrieve_body($res));
+		$body = json_decode( wp_remote_retrieve_body( $res ) );
 
+		if ( ! isset( $body->data->data ) || ! is_array( $body->data->data ) ) {
+			return (object) array(
+				'success'  => false,
+				'messages' => array( 'Stores malformed' ),
+			);
+		}
 
-        if (!isset($body->data->data) || !is_array($body->data->data)) {
-            return (object)[
-                'success' => false,
-                'messages' => ['Stores malformed']
-            ];
-        }
+		$list = array();
+		foreach ( $body->data->data as $s ) {
+			$list[] = (object) array(
+				'id'   => $s->store_id,
+				'name' => $s->store_name,
+			);
+		}
 
-        $list = [];
-        foreach ($body->data->data as $s) {
-            $list[] = (object)[
-                'id'   => $s->store_id,
-                'name' => $s->store_name
-            ];
-        }
+		set_transient( $key, $list, 5 * MINUTE_IN_SECONDS );
 
-
-        set_transient($key, $list, 5 * MINUTE_IN_SECONDS);
-
-        return (object)['success' => true, 'data' => $list];
-    }
+		return (object) array(
+			'success' => true,
+			'data'    => $list,
+		);
+	}
 
     /*-----------------------------------------
     | ORDER PAYLOAD VALIDATOR
@@ -387,103 +414,134 @@ class PathaoApiService
     }
 
 
-    /*-----------------------------------------
-    | PRICE CALCULATION
-    ------------------------------------------*/
-    public function price_calculation($args)
-    {
-        $body = wp_parse_args($args, [
-            'store_id'      => pathao_store_id(),
-            'item_type'     => 2,
-            'delivery_type' => 48,
-        ]);
+	/*-----------------------------------------
+	| PRICE CALCULATION
+	------------------------------------------*/
+	public function price_calculation( $args ) {
+		$body = wp_parse_args(
+			$args,
+			array(
+				'store_id'      => pathao_store_id(),
+				'item_type'     => 2,
+				'delivery_type' => 48,
+			)
+		);
 
-        $res = $this->request(
-            'wp_remote_post',
-            'aladdin/api/v1/merchant/price-plan',
-            ['body' => json_encode($body)]
-        );
+		$res = $this->request(
+			'wp_remote_post',
+			'aladdin/api/v1/merchant/price-plan',
+			array(
+				'body' => wp_json_encode( $body ),
+			)
+		);
 
-        if ($err = $this->has_errors($res)) return $err;
+		if ( $err = $this->has_errors( $res ) ) {
+			return $err;
+		}
 
-        $d = json_decode(wp_remote_retrieve_body($res));
+		$d = json_decode( wp_remote_retrieve_body( $res ) );
 
-        return (object)[
-            'success' => true,
-            'data' => (object)[
-                'price'       => $d->data->price,
-                'cod_enabled' => $d->data->cod_enabled
-            ]
-        ];
-    }
+		return (object) array(
+			'success' => true,
+			'data'    => (object) array(
+				'price'       => $d->data->price,
+				'cod_enabled' => $d->data->cod_enabled,
+			),
+		);
+	}
 
-    /*-----------------------------------------
-    | TOKEN GENERATION
-    ------------------------------------------*/
-    public function generate_tokens($args)
-    {
-        $body = wp_parse_args($args, ['grant_type' => 'password']);
+	/*-----------------------------------------
+	| TOKEN GENERATION (grant_type=password)
+	| Calls /aladdin/api/v1/issue-token WITHOUT
+	| Authorization header, per Pathao docs.
+	------------------------------------------*/
+	public function generate_tokens( $args ) {
+		$body = wp_parse_args(
+			$args,
+			array(
+				'grant_type' => 'password',
+			)
+		);
 
-        $res = $this->request(
-            'wp_remote_post',
-            'aladdin/api/v1/issue-token',
-            ['body' => json_encode($body)]
-        );
+		$url = $this->get_base_url() . 'aladdin/api/v1/issue-token';
 
-        if ($err = $this->has_errors($res)) return $err;
+		$res = wp_remote_post(
+			$url,
+			array(
+				'headers' => array(
+					'Content-Type' => 'application/json',
+					'Accept'       => 'application/json',
+				),
+				'body'    => wp_json_encode( $body ),
+			)
+		);
 
-        $d = json_decode(wp_remote_retrieve_body($res));
+		if ( $err = $this->has_errors( $res ) ) {
+			return $err;
+		}
 
-        return (object)[
-            'success' => true,
-            'data' => (object)[
-                'access_token'  => $d->access_token,
-                'refresh_token' => $d->refresh_token
-            ]
-        ];
-    }
+		$d = json_decode( wp_remote_retrieve_body( $res ) );
 
-    /*-----------------------------------------
-    | TOKEN REFRESH
-    ------------------------------------------*/
-    public function refresh_tokens()
-    {
-        $client_id     = get_option('pathao_client_id');
-        $client_secret = get_option('pathao_client_secret');
-        $refresh_token = get_option('pathao_refresh_token');
+		return (object) array(
+			'success' => true,
+			'data'    => (object) array(
+				'access_token'  => $d->access_token,
+				'refresh_token' => $d->refresh_token,
+			),
+		);
+	}
 
-        if (!$client_id || !$client_secret || !$refresh_token) {
-            return (object)[
-                'success'  => false,
-                'messages' => ['Token info missing']
-            ];
-        }
+	/*-----------------------------------------
+	| TOKEN REFRESH (grant_type=refresh_token)
+	| Calls /aladdin/api/v1/issue-token WITHOUT
+	| Authorization header, per Pathao docs.
+	------------------------------------------*/
+	public function refresh_tokens() {
+		$client_id     = get_option( 'pathao_client_id' );
+		$client_secret = get_option( 'pathao_client_secret' );
+		$refresh_token = get_option( 'pathao_refresh_token' );
 
-        $body = [
-            'client_id'     => $client_id,
-            'client_secret' => $client_secret,
-            'refresh_token' => $refresh_token,
-            'grant_type'    => 'refresh_token',
-        ];
+		if ( ! $client_id || ! $client_secret || ! $refresh_token ) {
+			return (object) array(
+				'success'  => false,
+				'messages' => array( 'Token info missing' ),
+			);
+		}
 
-        $res = $this->request(
-            'wp_remote_post',
-            'aladdin/api/v1/issue-token',
-            ['body' => json_encode($body)]
-        );
+		$body = array(
+			'client_id'     => $client_id,
+			'client_secret' => $client_secret,
+			'grant_type'    => 'refresh_token',
+			'refresh_token' => $refresh_token,
+		);
 
-        if ($err = $this->has_errors($res)) return $err;
+		$url = $this->get_base_url() . 'aladdin/api/v1/issue-token';
 
-        $d = json_decode(wp_remote_retrieve_body($res));
+		$res = wp_remote_post(
+			$url,
+			array(
+				'headers' => array(
+					'Content-Type' => 'application/json',
+					'Accept'       => 'application/json',
+				),
+				'body'    => wp_json_encode( $body ),
+			)
+		);
 
-        return (object)[
-            'success' => true,
-            'data' => (object)[
-                'access_token'  => $d->access_token,
-                'refresh_token' => $d->refresh_token
-            ]
-        ];
-    }
+		if ( $err = $this->has_errors( $res ) ) {
+			return $err;
+		}
+
+		$d = json_decode( wp_remote_retrieve_body( $res ) );
+
+		return (object) array(
+			'success' => true,
+			'data'    => (object) array(
+				'access_token'  => $d->access_token,
+				'refresh_token' => $d->refresh_token,
+			),
+		);
+	}
 	
 }
 

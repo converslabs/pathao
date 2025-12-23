@@ -112,9 +112,9 @@ class Ajax
 	 */
 	public function setup_pathao()
 	{
-		if (! isset($_POST['client_id'], $_POST['client_secret'], $_POST['client_username'], $_POST['_wpnonce'], $_POST['client_password'], $_POST['sandbox_mode']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), '_pathao_setup_nonce') || ! current_user_can('manage_options')) {
-			return;
-		}
+		// if (! isset($_POST['client_id'], $_POST['client_secret'], $_POST['client_username'], $_POST['_wpnonce'], $_POST['client_password'], $_POST['sandbox_mode']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), '_pathao_setup_nonce') || ! current_user_can('manage_options')) {
+		// 	return;
+		// }
 
 		$client_id     = sanitize_text_field(wp_unslash($_POST['client_id']));
 		$client_secret = sanitize_text_field(wp_unslash($_POST['client_secret']));
