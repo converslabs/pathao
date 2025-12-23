@@ -1,6 +1,6 @@
 jQuery(document).ready(function ($) {
 
-     if (typeof pathao_vars === 'undefined') {
+    if (typeof pathao_vars === 'undefined') {
         console.error('pathao_vars is missing');
         return;
     }
@@ -12,12 +12,67 @@ jQuery(document).ready(function ($) {
      * Helpers
      * --------------------------------------------------- */
     function ajaxPost(action, data, cb) {
-        $.post(AJAX_URL, {
-            action: action,
-            nonce: NONCE,
-            ...data
-        }, cb);
+        $.post(
+            AJAX_URL,
+            {
+                action: action,
+                nonce: NONCE,
+                ...data,
+            },
+            cb
+        );
     }
+
+    /* ---------------------------------------------------
+     * Pathao Setup: Generate Token (Sandbox / Live)
+     * --------------------------------------------------- */
+    $('#pathao-setup').on('submit', function (e) {
+        e.preventDefault();
+
+        const $form = $(this);
+        const $spinner = $('.pathao-setup-spinner');
+        const $notice = $('.pathao-notice');
+
+        $notice.empty();
+        $spinner.addClass('is-active');
+
+        const payload = {
+            _wp_setup_nonce: $form.find('input[name="_wp_setup_nonce"]').val(),
+            client_id: $('#pathao_client_id').val(),
+            client_secret: $('#pathao_client_secret').val(),
+            username: $('#pathao_client_username').val(),
+            password: $('#pathao_client_password').val(),
+            sandbox_mode: $('#pathao_sandbox_mode').is(':checked') ? 1 : 0,
+        };
+
+        $.post(
+            AJAX_URL,
+            {
+                action: 'pathao_setup_generate_token',
+                ...payload,
+            },
+            function (res) {
+                $spinner.removeClass('is-active');
+
+                if (!res || !res.success) {
+                    const msg = res && res.data && res.data.message ? res.data.message : 'Failed to generate token';
+                    $notice.html('<div class="notice notice-error"><p>' + msg + '</p></div>');
+                    return;
+                }
+
+                const data = res.data || {};
+
+                if (data.access_token) {
+                    $('#pathao_access_token').val(data.access_token);
+                }
+                if (data.refresh_token) {
+                    $('#pathao_refresh_token').val(data.refresh_token);
+                }
+
+                $notice.html('<div class="notice notice-success"><p>' + (data.message || 'Token generated successfully') + '</p></div>');
+            }
+        );
+    });
 
     /* ---------------------------------------------------
      * City → Zone
@@ -34,7 +89,7 @@ jQuery(document).ready(function ($) {
             $zone.empty().append('<option value="">Select Zone</option>');
 
             if (res.zones) {
-                res.zones.forEach(z => {
+                res.zones.forEach((z) => {
                     $zone.append(`<option value="${z.id}">${z.name}</option>`);
                 });
             }
@@ -55,7 +110,7 @@ jQuery(document).ready(function ($) {
             $area.empty().append('<option value="">Select Area</option>');
 
             if (res.areas) {
-                res.areas.forEach(a => {
+                res.areas.forEach((a) => {
                     $area.append(`<option value="${a.id}">${a.name}</option>`);
                 });
             }
@@ -75,35 +130,26 @@ jQuery(document).ready(function ($) {
         if (!city || !zone) return;
 
         $('#ptc-collectable').val('Calculating…');
-        console.log("this is the body", {
-            recipient_city: city,
-            recipient_zone: zone,
-            item_weight: weight,
-            delivery_type: deliveryType,
-            item_type: itemType
-        });
-        ajaxPost('pathao_price_calculation', {
-            recipient_city: city,
-            recipient_zone: zone,
-            item_weight: weight,
-            delivery_type: deliveryType,
-            item_type: itemType
-        }, function (res) {
-            console.log('Price response:', res);
-
-            if (res.success && res.data) {
-                $('#ptc-collectable').val(res.data.final_price);
-            } else {
-                $('#ptc-collectable').val('—');
+        ajaxPost(
+            'pathao_price_calculation',
+            {
+                recipient_city: city,
+                recipient_zone: zone,
+                item_weight: weight,
+                delivery_type: deliveryType,
+                item_type: itemType,
+            },
+            function (res) {
+                if (res.success && res.data) {
+                    $('#ptc-collectable').val(res.data.final_price);
+                } else {
+                    $('#ptc-collectable').val('—');
+                }
             }
-        });
+        );
     }
 
-    $(document).on(
-        'change',
-        '#ptc-city, #ptc-zone, #ptc-weight, #ptc-delivery-type, #ptc-item-type',
-        calculatePathaoPrice
-    );
+    $(document).on('change', '#ptc-city, #ptc-zone, #ptc-weight, #ptc-delivery-type, #ptc-item-type', calculatePathaoPrice);
 
     /* ---------------------------------------------------
      * Send Selected Orders to Pathao
@@ -128,7 +174,7 @@ jQuery(document).ready(function ($) {
                 alert('Orders sent to Pathao successfully');
                 location.reload();
             } else {
-                alert(res.data?.message || 'Failed to send orders');
+                alert((res.data && res.data.message) || 'Failed to send orders');
             }
         });
     });
@@ -144,9 +190,8 @@ jQuery(document).ready(function ($) {
 
         ajaxPost('pathao_sync_order_status', {}, function (res) {
             btn.prop('disabled', false).text('🔄 Sync Order Status');
-            alert(res.data?.message || 'Sync completed');
+            alert((res.data && res.data.message) || 'Sync completed');
             location.reload();
         });
     });
-
 });

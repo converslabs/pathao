@@ -1,44 +1,103 @@
 <?php
-        namespace SpringDevs\Pathao;
+namespace SpringDevs\Pathao;
 
-        use SpringDevs\Pathao\Facades\PathaoAPI;
-        use SpringDevs\Pathao\Services\PathaoApiService;
-        use WC_Order;
+use SpringDevs\Pathao\Facades\PathaoAPI;
+use SpringDevs\Pathao\Services\PathaoApiService;
+use WC_Order;
 
-        if (!defined('ABSPATH')) {
-            exit;
+if (! defined('ABSPATH')) {
+    exit;
+}
+
+class Ajax {
+
+    private static $instance = null;
+
+    public static function init() {
+        if (self::$instance === null) {
+            self::$instance = new self();
         }
-        
+        return self::$instance;
+    }
 
-        class Ajax {
+    private function __construct() {
 
-            private static $instance = null;
+        add_action('wp_ajax_send_bulk_orders_to_pathao', [$this, 'send_bulk_orders_to_pathao']);
+        add_action('wp_ajax_send_order_to_pathao', [$this, 'send_order_to_pathao']);
+        add_action('wp_ajax_get_wc_order_info', [$this, 'get_wc_order_info']);
 
-            public static function init() {
-                if (self::$instance === null) {
-                    self::$instance = new self();
-                }
-                return self::$instance;
-            }
+        add_action('wp_ajax_get_cities', [$this, 'get_cities']);
+        add_action('wp_ajax_get_city_zones', [$this, 'get_city_zones']);
 
-            private function __construct() {
+        add_action('wp_ajax_get_zone_areas', [$this, 'get_zone_areas']);
 
-                add_action('wp_ajax_send_bulk_orders_to_pathao', [$this, 'send_bulk_orders_to_pathao']);
-                add_action('wp_ajax_send_order_to_pathao', [$this, 'send_order_to_pathao']);
-                add_action('wp_ajax_get_wc_order_info', [$this, 'get_wc_order_info']);
+        add_action('wp_ajax_pathao_sync_order_status', [$this, 'sync_order_status']);
 
-                add_action('wp_ajax_get_cities', [$this, 'get_cities']);
-                add_action('wp_ajax_get_city_zones', [$this, 'get_city_zones']);
+        add_action('wp_ajax_pathao_price_calculation', [$this, 'price_calculation']);
 
-                add_action('wp_ajax_get_zone_areas', [$this, 'get_zone_areas']);
+        // Admin setup handler: save credentials, sandbox mode & generate tokens.
+        add_action('wp_ajax_pathao_setup_generate_token', [$this, 'handle_setup_generate_token']);
+    }
 
-                add_action('wp_ajax_pathao_sync_order_status', [$this, 'sync_order_status']);
+    /**
+     * Handle admin "Pathao Setup" generate token form.
+     *
+     * - Saves client_id, client_secret and sandbox mode.
+     * - Calls PathaoAPI::generate_tokens() with username/password.
+     */
+    public function handle_setup_generate_token() {
+        if (! current_user_can('manage_woocommerce')) {
+            wp_send_json_error(['message' => __('Permission denied', 'integration-of-pathao-for-woocommerce')], 403);
+        }
 
-                add_action('wp_ajax_pathao_price_calculation', [$this, 'price_calculation']);
+        // Verify nonce from setup.php: wp_nonce_field( '_pathao_setup_nonce', '_wp_setup_nonce' );
+        if (empty($_POST['_wp_setup_nonce']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wp_setup_nonce'])), '_pathao_setup_nonce')) {
+            wp_send_json_error(['message' => __('Security check failed', 'integration-of-pathao-for-woocommerce')], 400);
+        }
 
+        $client_id     = isset($_POST['client_id']) ? sanitize_text_field(wp_unslash($_POST['client_id'])) : '';
+        $client_secret = isset($_POST['client_secret']) ? sanitize_text_field(wp_unslash($_POST['client_secret'])) : '';
+        $username      = isset($_POST['username']) ? sanitize_text_field(wp_unslash($_POST['username'])) : '';
+        $password      = isset($_POST['password']) ? sanitize_text_field(wp_unslash($_POST['password'])) : '';
+        $sandbox_mode  = ! empty($_POST['sandbox_mode']) ? 1 : 0;
 
+        if (! $client_id || ! $client_secret || ! $username || ! $password) {
+            wp_send_json_error(['message' => __('All fields are required', 'integration-of-pathao-for-woocommerce')]);
+        }
 
-            }
+        // Persist credentials & sandbox flag.
+        update_option('pathao_client_id', $client_id);
+        update_option('pathao_client_secret', $client_secret);
+        update_option('pathao_sandbox_mode', $sandbox_mode);
+
+        // Generate tokens using the service (password grant).
+        $res = PathaoAPI::generate_tokens(
+            [
+                'username'   => $username,
+                'password'   => $password,
+                'grant_type' => 'password',
+            ]
+        );
+
+        if (empty($res->success)) {
+            $message = ! empty($res->messages[0]) ? $res->messages[0] : __('Token generation failed', 'integration-of-pathao-for-woocommerce');
+
+            wp_send_json_error(
+                [
+                    'message' => $message,
+                ]
+            );
+        }
+
+        wp_send_json_success(
+            [
+                'message'       => __('Token generated successfully', 'integration-of-pathao-for-woocommerce'),
+                'access_token'  => $res->data->access_token ?? '',
+                'refresh_token' => $res->data->refresh_token ?? '',
+                'sandbox_mode'  => (int) $sandbox_mode,
+            ]
+        );
+    }
 
             /* -------------------------------------------------------------------------
             * BULK ORDER HANDLER (Pathao does NOT support true bulk)

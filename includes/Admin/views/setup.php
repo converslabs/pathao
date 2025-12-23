@@ -56,7 +56,7 @@
 						</label>
 					</th>
 					<td>
-						<input class="regular-text" id="pathao_sandbox_mode" type="checkbox" />
+						<input class="regular-text" id="pathao_sandbox_mode" type="checkbox" <?php checked( (int) get_option( 'pathao_sandbox_mode' ), 1 ); ?> />
 					</td>
 				</tr>
 			</tbody>

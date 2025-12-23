@@ -268,6 +268,7 @@ class PathaoApiService
 
     /*-----------------------------------------
     | GET STORES
+    | Docs: GET {base_url}/aladdin/api/v1/stores
     ------------------------------------------*/
     public function get_stores(): stdClass
     {
@@ -285,11 +286,10 @@ class PathaoApiService
 
         $body = json_decode(wp_remote_retrieve_body($res));
 
-
         if (!isset($body->data->data) || !is_array($body->data->data)) {
             return (object)[
-                'success' => false,
-                'messages' => ['Stores malformed']
+                'success'  => false,
+                'messages' => ['Stores malformed'],
             ];
         }
 
@@ -297,14 +297,105 @@ class PathaoApiService
         foreach ($body->data->data as $s) {
             $list[] = (object)[
                 'id'   => $s->store_id,
-                'name' => $s->store_name
+                'name' => $s->store_name,
             ];
         }
 
-
         set_transient($key, $list, 5 * MINUTE_IN_SECONDS);
 
-        return (object)['success' => true, 'data' => $list];
+        return (object)[
+            'success' => true,
+            'data'    => $list,
+        ];
+    }
+
+    /*-----------------------------------------
+    | CREATE STORE
+    | Docs: POST {base_url}/aladdin/api/v1/stores
+    ------------------------------------------*/
+    public function create_store(array $payload): stdClass
+    {
+        // Required fields from official docs.
+        $required = [
+            'name',
+            'contact_name',
+            'contact_number',
+            'address',
+            'city_id',
+            'zone_id',
+            'area_id',
+        ];
+
+        foreach ($required as $field) {
+            if (! isset($payload[$field]) || $payload[$field] === '') {
+                return (object) [
+                    'success'  => false,
+                    'messages' => ["Missing required field: {$field}"],
+                ];
+            }
+        }
+
+        // Basic length validations to match docs.
+        if (strlen($payload['name']) < 3 || strlen($payload['name']) > 50) {
+            return (object) [
+                'success'  => false,
+                'messages' => ['Store name length must be between 3 and 50 characters'],
+            ];
+        }
+
+        if (strlen($payload['contact_name']) < 3 || strlen($payload['contact_name']) > 50) {
+            return (object) [
+                'success'  => false,
+                'messages' => ['Contact name length must be between 3 and 50 characters'],
+            ];
+        }
+
+        if (strlen($payload['contact_number']) !== 11) {
+            return (object) [
+                'success'  => false,
+                'messages' => ['Contact number must be 11 characters'],
+            ];
+        }
+
+        if (! empty($payload['secondary_contact']) && strlen($payload['secondary_contact']) !== 11) {
+            return (object) [
+                'success'  => false,
+                'messages' => ['Secondary contact number must be 11 characters'],
+            ];
+        }
+
+        if (strlen($payload['address']) < 15 || strlen($payload['address']) > 120) {
+            return (object) [
+                'success'  => false,
+                'messages' => ['Address length must be between 15 and 120 characters'],
+            ];
+        }
+
+        // Send request.
+        $res = $this->request(
+            'wp_remote_post',
+            'aladdin/api/v1/stores',
+            [
+                'body' => wp_json_encode($payload),
+            ]
+        );
+
+        if ($err = $this->has_errors($res)) {
+            return $err;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        // Expecting data.store_name per docs.
+        $store_name = $body->data->store_name ?? null;
+
+        return (object) [
+            'success' => true,
+            'data'    => (object) [
+                'store_name' => $store_name,
+                'raw'        => $body,
+            ],
+        ];
     }
 
     /*-----------------------------------------
