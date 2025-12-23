@@ -132,14 +132,22 @@
 
                 $items = [];
                 foreach ($order->get_items() as $item) {
-                    $items[] = $item->get_name() . ' x ' . $item->get_quantity();
+                     $product = $item->get_product();
+                    if ( ! $product ) continue;
+
+                    $items[] = [
+                        'name'  => $product->get_name(),
+                        'image' => $product->get_image_id()
+                            ? wp_get_attachment_image_url( $product->get_image_id(), 'thumbnail' )
+                            : wc_placeholder_img_src(),
+                    ];
                 }
 
                 wp_send_json([
                     'name'           => $order->get_formatted_shipping_full_name(),
                     'phone'          => $order->get_billing_phone(),
                     'address'        => $order->get_shipping_address_1(),
-                    'items'          => implode("\n", $items),
+                    'items'          => $items,
                     'weight'         => 0.5,
                     'quantity'       => $order->get_item_count(),
                     'total'          => $order->get_total(),
@@ -236,44 +244,49 @@
                 ]);
             }
             
-             public function price_calculation() {
-
+             public function price_calculation()
+                {
                     check_ajax_referer('pathao_nonce', 'nonce');
 
-                    $api = new PathaoApiService();
+                    $api = new \SpringDevs\Pathao\Services\PathaoApiService();
 
-                    //  IMPORTANT: keys now match JS exactly
+                    // WooCommerce Pathao settings
+                    $settings = get_option('woocommerce_pathao_settings');
+                    $store_id = (int) ($settings['store'] ?? 0);
+
                     $args = [
-                        'store_id'        => (int) get_option('pathao_store_id', 0),
+                        'store_id'        => $store_id,
                         'item_type'       => absint($_POST['item_type'] ?? 2),
                         'delivery_type'   => absint($_POST['delivery_type'] ?? 48),
                         'item_weight'     => (float) ($_POST['item_weight'] ?? 0.5),
                         'recipient_city'  => absint($_POST['recipient_city'] ?? 0),
-                        'recipient_zone'  => absint($_POST['recipient_zone'] ?? 0),
+                        'recipient_zone'  => absint($_POST['recipient_zone'] ?? 0), 
+                        // 'recipient_area' => absint($_POST['recipient_area'] ?? 0),
                     ];
 
-                    error_log('[AJAX Price Args] ' . wp_json_encode($args));
+                    // error_log('[AJAX Price Args] ' . wp_json_encode($args));
 
-                    //  Block invalid requests early
+                    // Basic validation
+                    if (!$args['store_id']) {
+                        wp_send_json_error(['message' => 'Store ID missing']);
+                    }
+
                     if (!$args['recipient_city'] || !$args['recipient_zone']) {
-                        wp_send_json_error([
-                            'message' => 'City or Zone missing'
-                        ]);
+                        wp_send_json_error(['message' => 'City and zone are required']);
                     }
 
                     $res = $api->price_calculation($args);
 
                     if (empty($res->success)) {
-                        error_log('[AJAX Price Failed] ' . print_r($res, true));
+                        error_log('[AJAX Price Failed] ' . wp_json_encode($res));
                         wp_send_json_error([
                             'message' => $res->messages[0] ?? 'Price calculation failed'
                         ]);
                     }
 
                     wp_send_json_success($res->data);
-            }
-
-    
+                }
+                
 
             public function sync_order_status()
             {

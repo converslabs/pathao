@@ -40,7 +40,21 @@
                     'dashicons-cart',
                     22
                 );
+                  add_submenu_page(
+                    'pathao-orders-menu-slug', // Parent slug
+                    'Setup Pathao', // Page title
+                    'Setup Pathao',       // Menu title
+                    'manage_options',          // Capability
+                    'pathao-shipping-settings', // Menu slug
+                    array( $this, 'redirect_to_pathao' ) // Callback
+                 );
             }
+
+            public function redirect_to_pathao() {
+                wp_safe_redirect( admin_url( 'admin.php?page=wc-settings&tab=shipping&section=pathao' ) );
+                exit;
+            }
+
             /**
              * Sync pending Pathao bulk orders when Pathao Orders page loads
              */
@@ -96,7 +110,7 @@
                         <label style="margin-right:10px;">
                             <?php esc_html_e( 'From Date', 'integration-of-pathao-for-woocommerce' ); ?>
                             <input type="date" name="from_date" value="<?php echo esc_attr($_GET['from_date'] ?? ''); ?>">
-                        </label>
+                        </label>_wc_settings
 
                         <label style="margin-right:10px;">
                             <?php esc_html_e( 'To Date', 'integration-of-pathao-for-woocommerce' ); ?>

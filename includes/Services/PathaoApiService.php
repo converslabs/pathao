@@ -11,12 +11,17 @@ class PathaoApiService
     /*-----------------------------------------
     | BASE URL
     ------------------------------------------*/
-    private function get_base_url(): string
-    {
-        return get_option('pathao_sandbox_mode')
-            ? 'https://courier-api-sandbox.pathao.com/'
-            : 'https://api-hermes.pathao.com/';
-    }
+    //  private function get_base_url(): string {
+    // return get_option('pathao_sandbox_mode')
+    //     ? 'https://courier-api-sandbox.pathao.com/'
+    //     : 'https://api-hermes.pathao.com/';
+    // }
+private function get_base_url(): string {
+    return get_option('pathao_sandbox_mode')
+        ? 'https://merchant-api-sandbox.pathao.com/'
+        : 'https://merchant-api.pathao.com/';
+}
+
 
     /*-----------------------------------------
     | ACCESS & REFRESH TOKENS
@@ -40,42 +45,51 @@ class PathaoApiService
     /*-----------------------------------------
     | REQUEST WRAPPER (AUTO TOKEN REFRESH)
     ------------------------------------------*/
-    private function request($func, string $path, array $args = [])
-    {
-        $token = $this->ensure_access_token();
+      private function request($func, string $path, array $args = [])
+{
+    $token = $this->ensure_access_token();
 
-        if (!$token) {
-            return ['error' => 'token_missing'];
-        }
-
-        $default_headers = [
-            'Authorization' => 'Bearer ' . $token,
-            'Content-Type'  => 'application/json',
-            'Accept'        => 'application/json',
-        ];
-
-        $final_args = array_merge(['headers' => $default_headers], $args);
-
-        $url = $this->get_base_url() . ltrim($path, '/');
-
-        $response = $func($url, $final_args);
-
-        // Pathao expired token → 401
-        if (wp_remote_retrieve_response_code($response) === 401) {
-
-            $new = $this->refresh_tokens();
-            if ($new && $new->success) {
-                update_option('pathao_access_token', $new->data->access_token);
-                update_option('pathao_refresh_token', $new->data->refresh_token);
-
-                $final_args['headers']['Authorization'] = 'Bearer ' . $new->data->access_token;
-
-                $response = $func($url, $final_args);
-            }
-        }
-
-        return $response;
+    if (!$token) {
+        return ['error' => 'token_missing'];
     }
+
+    $default_headers = [
+        'Authorization' => 'Bearer ' . $token,
+        'Content-Type'  => 'application/json; charset=UTF-8',
+        'Accept'        => 'application/json',
+    ];
+
+    $final_args = $args;
+
+    // ✅ SAFE header merge (DO NOT overwrite Authorization)
+    $final_args['headers'] = array_merge(
+        $default_headers,
+        $args['headers'] ?? []
+    );
+
+    $url = $this->get_base_url() . ltrim($path, '/');
+    error_log("[Everything URL]: ". $url);
+    error_log("[Everything]: ". print_r($final_args, true));
+    $response = $func("https://api-hermes.pathao.com/aladdin/api/v1/merchant/price-plan", $final_args);
+
+    // Token expired → refresh
+    if (wp_remote_retrieve_response_code($response) === 401) {
+        $new = $this->refresh_tokens();
+        if ($new && $new->success) {
+            update_option('pathao_access_token', $new->data->access_token);
+            update_option('pathao_refresh_token', $new->data->refresh_token);
+
+            $final_args['headers']['Authorization'] =
+                'Bearer ' . $new->data->access_token;
+
+            $response = $func($url, $final_args);
+        }
+    }
+
+    return $response;
+}
+
+
 
     /*-----------------------------------------
     | ERROR HANDLER
@@ -602,66 +616,86 @@ class PathaoApiService
     }
  
     /*-----------------------------------------
-    | PRICE CALCULATION
-    ------------------------------------------*/
-     public function price_calculation($args) { 
-            $body = wp_parse_args($args, [
-                'store_id'        => pathao_store_id(),
-                'item_type'       => 2,
-                'delivery_type'   => 48,
-                'item_weight'     => 0.5,
-                'recipient_city'  => 0,
-                'recipient_zone'  => 0,
-            ]);
+ | PRICE CALCULATION (MERCHANT)
+ ------------------------------------------*/
+public function price_calculation($args)
+{
+    error_log('[Pathao Price] price_calculation called');
+
+    // Get store ID from settings
+    $settings = get_option('woocommerce_pathao_settings');
+    $store_id = (int) ($settings['store'] ?? 0);
+
+    if (!$store_id) {
+        return (object)[
+            'success' => false,
+            'messages' => ['Store ID not configured']
+        ];
+    }
+
+    $body = wp_parse_args($args, [
+        'store_id'        => $store_id,
+        'item_type'       => 2,
+        'delivery_type'   => 48,
+        'item_weight'     => 0.5,
+        'recipient_city'  => 0,
+        'recipient_zone'  => 0,
+    ]);
+
+    //  Hard validation (Pathao requirement)
+    if (!$body['recipient_city'] || !$body['recipient_zone']) {
+        return (object)[
+            'success' => false,
+            'messages' => ['City and zone are required']
+        ];
+    }
+
+    error_log('[Pathao Price] Request payload: ' . wp_json_encode($body));
+
+    // Merchant endpoint + SOURCE header
+    $token = $this->ensure_access_token();
+    $res = $this->request(
+        'wp_remote_post',
+        'aladdin/api/v1/merchant/price-plan',
+        [
+            'body' => wp_json_encode($body),
+        ]
+    );
 
 
-            $res = $this->request(
-                'wp_remote_post',
-                'aladdin/api/v1/price-plan',
-                ['body' => wp_json_encode($body)]
-            );
-                error_log('[Pathao Price] API res: ' . print_r($res, true));
+    // Transport / API errors
+    if ($err = $this->has_errors($res)) {
+        error_log('[Pathao Price] API error: ' . wp_json_encode($res, true));
+        return $err;
+    }
 
-            // Transport / API-level errors
-            if ($err = $this->has_errors($res)) {
-                error_log('[Pathao Price] API error: ' . print_r($err, true));
-                return $err;
-            }
+    $raw_body = wp_remote_retrieve_body($res);
+    error_log('[Pathao Price] Raw response: ' . $raw_body);
 
-            $status_code = wp_remote_retrieve_response_code($res);
-            $raw_body    = wp_remote_retrieve_body($res);
+    $d = json_decode($raw_body);
 
-            //  Log raw response
-            error_log('[Pathao Price] HTTP ' . $status_code . ' Response: ' . $raw_body);
+    if (empty($d->data)) {
+        return (object)[
+            'success' => false,
+            'messages' => ['Price data missing'],
+            'raw' => $d,
+        ];
+    }
 
-            $d = json_decode($raw_body);
-
-            // Malformed response safety check
-            if (empty($d->data)) {
-                error_log('[Pathao Price] Malformed response: ' . print_r($d, true));
-                return (object)[
-                    'success'  => false,
-                    'messages' => ['Price data missing from Pathao response'],
-                    'raw'      => $d,
-                ];
-            }
-
-            return (object)[
-                'success' => true,
-                'data'    => (object)[
-                    'price'             => $d->data->price ?? 0,
-                    'discount'          => $d->data->discount ?? 0,
-                    'promo_discount'    => $d->data->promo_discount ?? 0,
-                    'plan_id'           => $d->data->plan_id ?? null,
-                    'cod_enabled'       => $d->data->cod_enabled ?? 0,
-                    'cod_percentage'    => $d->data->cod_percentage ?? 0,
-                    'additional_charge' => $d->data->additional_charge ?? 0,
-                    'final_price'       => $d->data->final_price ?? 0,
-                ],
-            ];
-        }
-
-
+    return (object)[
+        'success' => true,
+        'data' => (object)[
+            'price'              => $d->data->price ?? 0,
+            'discount'           => $d->data->discount ?? 0,
+            'promo_discount'     => $d->data->promo_discount ?? 0,
+            'plan_id'            => $d->data->plan_id ?? null,
+            'cod_enabled'        => $d->data->cod_enabled ?? 0,
+            'cod_percentage'     => $d->data->cod_percentage ?? 0,
+            'additional_charge'  => $d->data->additional_charge ?? 0,
+            'final_price'        => $d->data->final_price ?? 0,
+        ],
+    ];
+} 
 
     /*-----------------------------------------
     | TOKEN GENERATION

@@ -1,6 +1,6 @@
 jQuery(document).ready(function ($) {
 
-    if (typeof pathao_vars === 'undefined') {
+     if (typeof pathao_vars === 'undefined') {
         console.error('pathao_vars is missing');
         return;
     }
@@ -65,36 +65,39 @@ jQuery(document).ready(function ($) {
     /* ---------------------------------------------------
      * Price Calculation
      * --------------------------------------------------- */
-     function calculatePathaoPrice() {
-                    const city = $('#ptc-city').val();
-                    const zone = $('#ptc-zone').val();
-                    const weight = $('#ptc-weight').val() || 0.5;
-                    const deliveryType = $('#ptc-delivery-type').val() || 48;
-                    const itemType = $('#ptc-item-type').val() || 2;
+    function calculatePathaoPrice() {
+        const city = $('#ptc-city').val();
+        const zone = $('#ptc-zone').val();
+        const weight = $('#ptc-weight').val() || 0.5;
+        const deliveryType = $('#ptc-delivery-type').val() || 48;
+        const itemType = $('#ptc-item-type').val() || 2;
 
-                    if (!city || !zone) return;
+        if (!city || !zone) return;
 
-                    ajaxPost(
-                        'pathao_price_calculation',
-                        {
-                            recipient_city: city,
-                            recipient_zone: zone,
-                            item_weight: weight,
-                            delivery_type: deliveryType,
-                            item_type: itemType
-                        },
-                        function (res) {
-                            console.log('Price response:', res);
+        $('#ptc-collectable').val('Calculating…');
+        console.log("this is the body", {
+            recipient_city: city,
+            recipient_zone: zone,
+            item_weight: weight,
+            delivery_type: deliveryType,
+            item_type: itemType
+        });
+        ajaxPost('pathao_price_calculation', {
+            recipient_city: city,
+            recipient_zone: zone,
+            item_weight: weight,
+            delivery_type: deliveryType,
+            item_type: itemType
+        }, function (res) {
+            console.log('Price response:', res);
 
-                            if (res.success && res.data) {
-                                $('#ptc-collectable').val(res.data.final_price);
-                            } else {
-                                $('#ptc-collectable').val('—');
-                            }
-                        }
-                    );
-        }
-
+            if (res.success && res.data) {
+                $('#ptc-collectable').val(res.data.final_price);
+            } else {
+                $('#ptc-collectable').val('—');
+            }
+        });
+    }
 
     $(document).on(
         'change',

@@ -26,7 +26,7 @@
 
         <div class="ptc-field">
           <label><?php esc_html_e( 'Order Items', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <textarea id="ptc-order-items" readonly></textarea>
+          <div id="ptc-order-items" readonly></div>
         </div>
       </div>
 

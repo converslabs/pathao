@@ -5,7 +5,7 @@
 	<h2><?php esc_html_e( 'Pathao Setup', 'integration-of-pathao-for-woocommerce' ); ?></h2>
 	<div class="pathao-notice"></div>
 	<p><?php esc_html_e( 'These credentials required for generate access & refresh token.', 'integration-of-pathao-for-woocommerce' ); ?></p>
-	<form method="post" action="options.php" id="pathao-setup">
+	<form method="post" action="#" id="pathao-setup">
 		<?php wp_nonce_field( '_pathao_setup_nonce', '_wp_setup_nonce' ); ?>
 		<table class="form-table">
 			<tbody>

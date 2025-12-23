@@ -41,12 +41,33 @@ jQuery(document).ready(function ($) {
             $("#ptc-quantity").val(res.quantity);
             $("#ptc-total-price").val(res.total);
             $("#ptc-payment-status").val(res.payment_status);
-            $("#ptc-order-items").val(res.items);
+            renderOrderItems(res.items);
             $("#ptc-order-number").val(orderId);
             $("#ptc-collectable").val(res.cod_amount);
             $("#ptc-store").val(res.store_name);
         });
     }
+    
+    function renderOrderItems(items) {
+    const $container = $("#ptc-order-items");
+    $container.empty();
+
+    if (!items || !items.length) {
+        $container.html("<em>No items found</em>");
+        return;
+    }
+
+    items.forEach(item => {
+        const html = `
+            <div class="ptc-order-item">
+                <img src="${item.image}" alt="${item.name}">
+                <span class="ptc-product-name">${item.name}</span>
+            </div>
+        `;
+        $container.append(html);
+    });
+    }
+
 
     /* ---------------- CITIES ---------------- */
     function loadCities(orderId) {
@@ -71,6 +92,7 @@ jQuery(document).ready(function ($) {
             order_id: $("#ptc-send-confirm").data("order-id"),
             nonce: NONCE
         }, function (res) {
+            console.log("This is ",res);
             const $zone = $("#ptc-zone").empty();
             res.zones.forEach(zone => {
                 $zone.append(`<option value="${zone.id}">${zone.name}</option>`);

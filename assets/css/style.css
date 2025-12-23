@@ -14,7 +14,7 @@
 
 .ptc-modal-content {
   background: #fff;
-  width: 700px;
+  width: 60%;
   max-height: 90vh;
   overflow-y: auto;
   border-radius: 10px;
@@ -110,4 +110,22 @@
 
 .ptc-btn-secondary:hover {
   background: #e5e7eb;
+}
+
+
+.ptc-order-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ptc-order-item img {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+}
+
+.ptc-product-name {
+    font-size: 13px;
+    font-weight: 500;
 }
