@@ -1,14 +1,13 @@
 === Pathao Integration for WooCommerce ===
 Contributors: converswp, shamsbd71
-Donate link: http://springdevs.com/
+Donate link: https://converslabs.com/
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
 Tested up to: 6.9
 Stable tag: 2.0
 Requires PHP: 7.0
 License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-
+License URI: https://www.gnu.org/licenses/gpl-2.0.html 
 Pathao courier integration for WooCommerce
 
 

@@ -283,32 +283,6 @@ class PathaoApiService
     ------------------------------------------*/
     private function validate_order_payload($p)
     {
-        $required = [
-            'store_id',
-            'recipient_name', 
-            'recipient_address',
-            'delivery_type',
-            'item_type',
-            'item_quantity',
-            'item_weight',
-            'amount_to_collect'
-        ]; 
-
-
-        foreach ($required as $f) {
-            if (!isset($p[$f]) || $p[$f] === '') {
-                return "Missing required field: {$f}";
-            }
-        }
-
-        if (strlen($p['recipient_phone']) != 11) {
-            return "Recipient phone must be 11 digits";
-        }
-
-        if (strlen($p['recipient_address']) < 10) {
-            return "Recipient address must be at least 10 characters";
-        }
-
         return true;
     }
 
