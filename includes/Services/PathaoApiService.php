@@ -131,8 +131,28 @@ class PathaoApiService
 		}
 
 		if ( $code < 200 || $code > 299 ) {
+			// Try to surface Pathao error message instead of a generic string.
+			$body     = json_decode( wp_remote_retrieve_body( $res ) );
+			$messages = array();
+
+			if ( isset( $body->message ) && is_string( $body->message ) ) {
+				$messages[] = $body->message;
+			} elseif ( isset( $body->errors ) && is_array( $body->errors ) ) {
+				foreach ( $body->errors as $err ) {
+					if ( is_array( $err ) ) {
+						$messages = array_merge( $messages, $err );
+					} else {
+						$messages[] = $err;
+					}
+				}
+			}
+
+			if ( empty( $messages ) ) {
+				$messages[] = 'Something went wrong';
+			}
+
 			$data->success  = false;
-			$data->messages = array( 'Something went wrong' );
+			$data->messages = $messages;
 			return $data;
 		}
 
@@ -156,9 +176,10 @@ class PathaoApiService
         return false;
     }
 
-    /*-----------------------------------------
-    | GET CITIES
-    ------------------------------------------*/
+	/*-----------------------------------------
+	| GET CITIES
+	| Matches: GET /aladdin/api/v1/city-list
+	------------------------------------------*/
 	public function get_cities() {
 		$transient_key = '_sdevs_pathao_cities';
 
@@ -166,7 +187,8 @@ class PathaoApiService
 			return $cached;
 		}
 
-		$res = $this->request( 'wp_remote_get', 'aladdin/api/v1/cities' );
+		// Per docs: /aladdin/api/v1/city-list
+		$res = $this->request( 'wp_remote_get', 'aladdin/api/v1/city-list' );
 
 		if ( $err = $this->has_errors( $res ) ) {
 			return $err;
@@ -174,7 +196,7 @@ class PathaoApiService
 
 		$body = json_decode( wp_remote_retrieve_body( $res ) );
 
-		if ( ! isset( $body->data->data ) ) {
+		if ( ! isset( $body->data->data ) || ! is_array( $body->data->data ) ) {
 			return (object) array(
 				'success'  => false,
 				'messages' => array( 'Cities data malformed' ),
@@ -199,11 +221,12 @@ class PathaoApiService
 
     /*-----------------------------------------
     | GET ZONES
+	| Matches: GET /aladdin/api/v1/cities/{city_id}/zone-list
     ------------------------------------------*/
 	public function get_zones( $city_id ) {
 		$res = $this->request(
 			'wp_remote_get',
-			"aladdin/api/v1/zones?city_id={$city_id}"
+			"aladdin/api/v1/cities/{$city_id}/zone-list"
 		);
 
 		if ( $err = $this->has_errors( $res ) ) {
@@ -212,7 +235,7 @@ class PathaoApiService
 
 		$body = json_decode( wp_remote_retrieve_body( $res ) );
 
-		if ( ! isset( $body->data->data ) ) {
+		if ( ! isset( $body->data->data ) || ! is_array( $body->data->data ) ) {
 			return array();
 		}
 

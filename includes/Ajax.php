@@ -85,24 +85,26 @@ class Ajax
 	 * @return void
 	 */
 	public function get_cities()
-	{  
-		if ( ! isset($_POST['order_id']) ) {
-		wp_send_json_error(['message' => 'Missing order_id']);
-		}
-
-		$order_id = sanitize_text_field(wp_unslash($_POST['order_id']));
+	{
+		// order_id is optional; when present we use it to pre-select city,
+		// but missing order_id should NOT be treated as an error.
+		$order_id = isset( $_POST['order_id'] )
+			? sanitize_text_field( wp_unslash( $_POST['order_id'] ) )
+			: 0;
 
 		$response = PathaoAPI::get_cities();
 
-
-		$cities = [];
-		if (is_object($response) && isset($response->success) && $response->success && isset($response->data)) {
+		$cities = array();
+		if ( is_object( $response ) && isset( $response->success ) && $response->success && isset( $response->data ) ) {
 			$cities = $response->data;
-		} 
-		wp_send_json([
+		}
+
+		wp_send_json(
+			array(
 				'cities' => $cities,
-				'value'  => apply_filters('pathao_selected_order_city_value', null, $order_id),
-		]);
+				'value'  => apply_filters( 'pathao_selected_order_city_value', null, $order_id ),
+			)
+		);
 	}
 
 	/**
@@ -112,17 +114,37 @@ class Ajax
 	 */
 	public function setup_pathao()
 	{
-		// if (! isset($_POST['client_id'], $_POST['client_secret'], $_POST['client_username'], $_POST['_wpnonce'], $_POST['client_password'], $_POST['sandbox_mode']) || ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), '_pathao_setup_nonce') || ! current_user_can('manage_options')) {
-		// 	return;
-		// }
+		// Validate required fields, nonce, and capability.
+		if (
+			! isset(
+				$_POST['client_id'],
+				$_POST['client_secret'],
+				$_POST['client_username'],
+				$_POST['_wpnonce'],
+				$_POST['client_password'],
+				$_POST['sandbox_mode']
+			)
+			|| ! wp_verify_nonce(
+				sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ),
+				'_pathao_setup_nonce'
+			)
+			|| ! current_user_can( 'manage_options' )
+		) {
+			wp_send_json(
+				array(
+					'success'  => false,
+					'messages' => array( 'Unauthorized or invalid request.' ),
+				)
+			);
+		}
 
-		$client_id     = sanitize_text_field(wp_unslash($_POST['client_id']));
-		$client_secret = sanitize_text_field(wp_unslash($_POST['client_secret']));
+		$client_id     = sanitize_text_field( wp_unslash( $_POST['client_id'] ) );
+		$client_secret = sanitize_text_field( wp_unslash( $_POST['client_secret'] ) );
 		$data          = array(
 			'client_id'     => $client_id,
 			'client_secret' => $client_secret,
-			'username'      => sanitize_email(wp_unslash($_POST['client_username'])),
-			'password'      => sanitize_text_field(wp_unslash($_POST['client_password'])),
+			'username'      => sanitize_email( wp_unslash( $_POST['client_username'] ) ),
+			'password'      => sanitize_text_field( wp_unslash( $_POST['client_password'] ) ),
 		);
 
 		// Log submitted form data for debugging. Mask sensitive values.
@@ -138,14 +160,13 @@ class Ajax
 		}
 
 		$masked_secret = $client_secret;
-		if ($masked_secret && strlen($masked_secret) > 4) {
-			$masked_secret = str_repeat('*', strlen($masked_secret) - 4) . substr($masked_secret, -4);
+		if ( $masked_secret && strlen( $masked_secret ) > 4 ) {
+			$masked_secret = str_repeat( '*', strlen( $masked_secret ) - 4 ) . substr( $masked_secret, -4 );
 		}
 
-		// $raw_sandbox = isset($_POST['sandbox_mode']) ? (bool) sanitize_text_field(wp_unslash($_POST['sandbox_mode'])) : false;
-		$raw_sandbox = false;
-
-		update_option('pathao_sandbox_mode', 'true' === $_POST['sandbox_mode'] ? true : false);
+		// Save sandbox / live environment toggle exactly as chosen in the UI.
+		$raw_sandbox = isset( $_POST['sandbox_mode'] ) ? (bool) $_POST['sandbox_mode'] : false;
+		update_option( 'pathao_sandbox_mode', $raw_sandbox );
 
 		$res = PathaoAPI::generate_tokens($data);
 
@@ -361,16 +382,14 @@ class Ajax
 		}
 
 		if (isset($result->data->order_status)) { 
-
-			$order_status = sanitize_text_field($result['data']['order_status']);
+			// $result is stdClass; access properties, not array offsets.
+			$order_status = sanitize_text_field($result->data->order_status);
 		} elseif (is_object($res) && isset($res->data->order_status)) {
 			$order_status = sanitize_text_field($res->data->order_status);
 		}
-
+		
 		if (isset($result->data->delivery_fee))  {
-
-
-			$delivery_fee = $result['data']['delivery_fee'];
+			$delivery_fee = $result->data->delivery_fee;
 		} elseif (is_object($res) && isset($res->data->delivery_fee)) {
 			$delivery_fee = $res->data->delivery_fee;
 		}
