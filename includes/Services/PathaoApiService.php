@@ -11,16 +11,14 @@ class PathaoApiService
     /*-----------------------------------------
     | BASE URL
     ------------------------------------------*/
-    //  private function get_base_url(): string {
-    // return get_option('pathao_sandbox_mode')
-    //     ? 'https://courier-api-sandbox.pathao.com/'
-    //     : 'https://api-hermes.pathao.com/';
-    // }
-private function get_base_url(): string {
-    return get_option('pathao_sandbox_mode')
-        ? 'https://merchant-api-sandbox.pathao.com/'
-        : 'https://merchant-api.pathao.com/';
-}
+    // Base URL must follow official Pathao Courier Merchant API docs:
+    // Sandbox:   https://courier-api-sandbox.pathao.com
+    // Production: https://api-hermes.pathao.com
+    private function get_base_url(): string {
+        return get_option('pathao_sandbox_mode')
+            ? 'https://courier-api-sandbox.pathao.com/'
+            : 'https://api-hermes.pathao.com/';
+    }
 
 
     /*-----------------------------------------
@@ -70,7 +68,9 @@ private function get_base_url(): string {
     $url = $this->get_base_url() . ltrim($path, '/');
     error_log("[Everything URL]: ". $url);
     error_log("[Everything]: ". print_r($final_args, true));
-    $response = $func("https://api-hermes.pathao.com/aladdin/api/v1/merchant/price-plan", $final_args);
+
+    // Always call the requested endpoint; previously a hardcoded URL broke all requests.
+    $response = $func($url, $final_args);
 
     // Token expired → refresh
     if (wp_remote_retrieve_response_code($response) === 401) {
@@ -698,28 +698,74 @@ public function price_calculation($args)
 } 
 
     /*-----------------------------------------
-    | TOKEN GENERATION
+    | TOKEN GENERATION (PASSWORD GRANT)
+    | Docs: POST {base_url}/aladdin/api/v1/issue-token
     ------------------------------------------*/
     public function generate_tokens($args)
     {
-        $body = wp_parse_args($args, ['grant_type' => 'password']);
+        $client_id     = get_option('pathao_client_id');
+        $client_secret = get_option('pathao_client_secret');
 
-        $res = $this->request(
-            'wp_remote_post',
-            'aladdin/api/v1/issue-token',
-            ['body' => json_encode($body)]
-        );
+        $username = $args['username'] ?? '';
+        $password = $args['password'] ?? '';
+        $grant    = $args['grant_type'] ?? 'password';
 
-        if ($err = $this->has_errors($res)) return $err;
+        if (!$client_id || !$client_secret || !$username || !$password) {
+            return (object)[
+                'success'  => false,
+                'messages' => ['client_id, client_secret, username and password are required to issue token'],
+            ];
+        }
 
-        $d = json_decode(wp_remote_retrieve_body($res));
+        $url = $this->get_base_url() . 'aladdin/api/v1/issue-token';
+
+        $body = [
+            'client_id'     => $client_id,
+            'client_secret' => $client_secret,
+            'grant_type'    => $grant,
+            'username'      => $username,
+            'password'      => $password,
+        ];
+
+        $response = wp_remote_post($url, [
+            'headers' => [
+                'Content-Type' => 'application/json',
+                'Accept'       => 'application/json',
+            ],
+            'body' => wp_json_encode($body),
+        ]);
+
+        if (is_wp_error($response)) {
+            return (object)[
+                'success'  => false,
+                'messages' => [$response->get_error_message()],
+            ];
+        }
+
+        $code = wp_remote_retrieve_response_code($response);
+        if ($code !== 200) {
+            return (object)[
+                'success'  => false,
+                'messages' => ['Token issue failed'],
+            ];
+        }
+
+        $d = json_decode(wp_remote_retrieve_body($response));
+
+        // Persist tokens for later use (as per docs: save access token & refresh token)
+        if (!empty($d->access_token)) {
+            update_option('pathao_access_token', $d->access_token);
+        }
+        if (!empty($d->refresh_token)) {
+            update_option('pathao_refresh_token', $d->refresh_token);
+        }
 
         return (object)[
             'success' => true,
-            'data' => (object)[
-                'access_token'  => $d->access_token,
-                'refresh_token' => $d->refresh_token
-            ]
+            'data'    => (object)[
+                'access_token'  => $d->access_token ?? '',
+                'refresh_token' => $d->refresh_token ?? '',
+            ],
         ];
     }
 
