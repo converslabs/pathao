@@ -1,20 +1,21 @@
 <?php
 
-namespace ConversLabs\Pathao\Services; 
- 
+namespace ConversLabs\Pathao\Services;
+
 use stdClass;
 
 class PathaoApiService
 {
 
-	
+
     /*-----------------------------------------
     | BASE URL
     ------------------------------------------*/
     // Base URL must follow official Pathao Courier Merchant API docs:
     // Sandbox:   https://courier-api-sandbox.pathao.com
     // Production: https://api-hermes.pathao.com
-    private function get_base_url(): string {
+    private function get_base_url(): string
+    {
         return get_option('pathao_sandbox_mode')
             ? 'https://courier-api-sandbox.pathao.com/'
             : 'https://api-hermes.pathao.com/';
@@ -43,51 +44,51 @@ class PathaoApiService
     /*-----------------------------------------
     | REQUEST WRAPPER (AUTO TOKEN REFRESH)
     ------------------------------------------*/
-      private function request($func, string $path, array $args = [])
-{
-    $token = $this->ensure_access_token();
+    private function request($func, string $path, array $args = [])
+    {
+        $token = $this->ensure_access_token();
 
-    if (!$token) {
-        return ['error' => 'token_missing'];
-    }
-
-    $default_headers = [
-        'Authorization' => 'Bearer ' . $token,
-        'Content-Type'  => 'application/json; charset=UTF-8',
-        'Accept'        => 'application/json',
-    ];
-
-    $final_args = $args;
-
-    // ✅ SAFE header merge (DO NOT overwrite Authorization)
-    $final_args['headers'] = array_merge(
-        $default_headers,
-        $args['headers'] ?? []
-    );
-
-    $url = $this->get_base_url() . ltrim($path, '/');
-    error_log("[Everything URL]: ". $url);
-    error_log("[Everything]: ". print_r($final_args, true));
-
-    // Always call the requested endpoint; previously a hardcoded URL broke all requests.
-    $response = $func($url, $final_args);
-
-    // Token expired → refresh
-    if (wp_remote_retrieve_response_code($response) === 401) {
-        $new = $this->refresh_tokens();
-        if ($new && $new->success) {
-            update_option('pathao_access_token', $new->data->access_token);
-            update_option('pathao_refresh_token', $new->data->refresh_token);
-
-            $final_args['headers']['Authorization'] =
-                'Bearer ' . $new->data->access_token;
-
-            $response = $func($url, $final_args);
+        if (!$token) {
+            return ['error' => 'token_missing'];
         }
-    }
 
-    return $response;
-}
+        $default_headers = [
+            'Authorization' => 'Bearer ' . $token,
+            'Content-Type'  => 'application/json; charset=UTF-8',
+            'Accept'        => 'application/json',
+        ];
+
+        $final_args = $args;
+
+        // ✅ SAFE header merge (DO NOT overwrite Authorization)
+        $final_args['headers'] = array_merge(
+            $default_headers,
+            $args['headers'] ?? []
+        );
+
+        $url = $this->get_base_url() . ltrim($path, '/');
+        // error_log("[Everything URL]: ". $url);
+        // error_log("[Everything]: ". print_r($final_args, true));
+
+        // Always call the requested endpoint; previously a hardcoded URL broke all requests.
+        $response = $func($url, $final_args);
+
+        // Token expired → refresh
+        if (wp_remote_retrieve_response_code($response) === 401) {
+            $new = $this->refresh_tokens();
+            if ($new && $new->success) {
+                update_option('pathao_access_token', $new->data->access_token);
+                update_option('pathao_refresh_token', $new->data->refresh_token);
+
+                $final_args['headers']['Authorization'] =
+                    'Bearer ' . $new->data->access_token;
+
+                $response = $func($url, $final_args);
+            }
+        }
+
+        return $response;
+    }
 
 
 
@@ -162,26 +163,26 @@ class PathaoApiService
 
         if ($err = $this->has_errors($res)) {
             return $err;
-        } 
-        $body = json_decode(wp_remote_retrieve_body($res)); 
+        }
+        $body = json_decode(wp_remote_retrieve_body($res));
 
-        if (!isset($body->data->data) || !is_array($body->data->data)) {    
+        if (!isset($body->data->data) || !is_array($body->data->data)) {
             return (object)[
                 'success' => false,
                 'messages' => ['Cities data malformed']
             ];
-        } 
+        }
         $list = [];
         foreach ($body->data->data as $c) {
             $list[] = (object)[
                 'id'   => $c->city_id,
                 'name' => $c->city_name
             ];
-        } 
-        set_transient($transient_key, $list, 12 * HOUR_IN_SECONDS); 
+        }
+        set_transient($transient_key, $list, 12 * HOUR_IN_SECONDS);
 
         return (object)['success' => true, 'data' => $list];
-    } 
+    }
 
     /*-----------------------------------------
     | GET ZONES BY CITY (NEW ENDPOINT)
@@ -200,13 +201,13 @@ class PathaoApiService
             "aladdin/api/v1/cities/{$city_id}/zone-list"
         );
 
-         if ($err = $this->has_errors($res)) {
+        if ($err = $this->has_errors($res)) {
             error_log('[Pathao Zone Error] ' . print_r($err, true));
             return $err;
         }
 
-        $body = json_decode(wp_remote_retrieve_body($res)); 
-         
+        $body = json_decode(wp_remote_retrieve_body($res));
+
         if (
             empty($body->data->data) ||
             !is_array($body->data->data)
@@ -231,7 +232,7 @@ class PathaoApiService
             'success' => true,
             'data'    => $list
         ];
-    } 
+    }
 
     /*-----------------------------------------
     | GET AREAS
@@ -280,6 +281,7 @@ class PathaoApiService
 
         $res = $this->request('wp_remote_get', 'aladdin/api/v1/stores');
 
+        error_log('[Pathao Stores] Response: ' . print_r($res, true));
         if ($err = $this->has_errors($res)) {
             return $err;
         }
@@ -405,14 +407,14 @@ class PathaoApiService
     {
         $required = [
             'store_id',
-            'recipient_name', 
+            'recipient_name',
             'recipient_address',
             'delivery_type',
             'item_type',
             'item_quantity',
             'item_weight',
             'amount_to_collect'
-        ]; 
+        ];
 
 
         foreach ($required as $f) {
@@ -432,27 +434,79 @@ class PathaoApiService
         return true;
     }
 
+
+    private function map_delivery_type(\WC_Order $order): int
+    {
+        foreach ($order->get_shipping_methods() as $method) {
+            $method_id = $method->get_method_id();
+
+            // Adjust if you add more mappings later
+            if ($method_id === 'local_pickup') {
+                return 12; // Same city
+            }
+        }
+
+        return 48; // Normal delivery (default)
+    }
+
+
+    private function calculate_order_weight(\WC_Order $order): float
+    {
+        $weight = 0.0;
+
+        foreach ($order->get_items() as $item) {
+            $product = $item->get_product();
+            if (!$product) {
+                continue;
+            }
+
+            $product_weight = (float) $product->get_weight();
+            $qty            = (int) $item->get_quantity();
+
+            $weight += ($product_weight * $qty);
+        }
+
+        // Pathao rule: minimum 0.5 KG
+        return max(0.5, round($weight, 2));
+    }
+
+
+    private function get_pathao_location(): array
+    {
+        return [
+            'city' => (int) get_option('pathao_city_id', 0),
+            'zone' => (int) get_option('pathao_zone_id', 0),
+        ];
+    }
+
+    private function get_item_type(): int
+    {
+        $settings = get_option('woocommerce_pathao_settings');
+
+        // 1 = Document, 2 = Parcel
+        return (int) ($settings['item_type'] ?? 2);
+    }
+
+
+
+
     /*-----------------------------------------
     | SEND ORDER TO PATHAO
     ------------------------------------------*/
-    public function send_order(int $order_id): stdClass
-    { 
-
+    public function send_order(int $order_id): \stdClass
+    {
         if (!function_exists('wc_get_order')) {
-            error_log('[Pathao] WooCommerce missing');
             return (object)['success' => false, 'messages' => ['WooCommerce missing']];
         }
 
         $order = wc_get_order($order_id);
         if (!$order) {
-            error_log('[Pathao] Invalid order ID');
             return (object)['success' => false, 'messages' => ['Invalid order']];
         }
 
-        /* Prevent duplicate Pathao order */
+        // Prevent duplicate Pathao order
         $existing = $order->get_meta('_pathao_consignment_id');
-        if (!empty($existing)) {
-            error_log('[Pathao] Consignment already exists: ' . $existing);
+        if ($existing) {
             return (object)[
                 'success' => true,
                 'messages' => ['Already sent to Pathao'],
@@ -460,89 +514,95 @@ class PathaoApiService
             ];
         }
 
-        /* Extract fields */
         $settings = get_option('woocommerce_pathao_settings');
-        $store_id = (int)($settings['store'] ?? 0);
+        $store_id = (int) ($settings['store'] ?? 0);
 
-        $payload = [
-            'store_id'           => $store_id,
-            'merchant_order_id'  => (string)$order_id,
-            'recipient_name'     => trim(
-                $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name()
-            ),
-            'recipient_phone'    => $order->get_billing_phone() ?: '01700000000',
-            'recipient_address'  => $order->get_shipping_address_1() . ', ' . $order->get_shipping_city(),
-            'delivery_type'      => 48,
-            'item_type'          => 2,
-            'item_quantity'      => $order->get_item_count(),
-            'item_weight'        => '0.5',
-            'item_description'   => "WooCommerce Order #{$order_id}",
-            'amount_to_collect'  => $order->get_payment_method() === 'cod'
-                ? (int)$order->get_total()
-                : 0,
-        ]; 
-
-        /* Validate payload */
-        $validate = $this->validate_order_payload($payload);
-        if ($validate !== true) {
-            error_log('[Pathao] Validation failed: ' . $validate);
-            return (object)['success' => false, 'messages' => [$validate]];
+        if (!$store_id) {
+            return (object)['success' => false, 'messages' => ['Store not configured']];
         }
 
-        /* Send API request */
-        $res = $this->request(
-            'wp_remote_post',
-            'aladdin/api/v1/orders',
-            ['body' => json_encode($payload)]
-        );
+        $location = $this->get_pathao_location();
 
-        if ($err = $this->has_errors($res)) {
-            error_log('[Pathao] API error: ' . print_r($err, true));
-            return $err;
-        }
-
-        /* Decode response */
-        $body = json_decode(wp_remote_retrieve_body($res));
-
-        // error_log('[Pathao] Raw response: ' . print_r($body, true));
-
-        /* SAFELY check consignment_id */
-        if (
-            empty($body->data) ||
-            empty($body->data->consignment_id)
-        ) {
-            error_log('[Pathao] consignment_id missing in response');
+        if (!$location['city'] || !$location['zone']) {
             return (object)[
                 'success' => false,
-                'messages' => ['Consignment ID not returned'],
-                'raw_response' => $body
+                'messages' => ['Recipient city and zone must be configured']
             ];
         }
 
-        $consignment_id = sanitize_text_field($body->data->consignment_id);
-        $order_status   = sanitize_text_field($body->data->order_status ?? 'Pending');
+        $payload = [
+            'store_id'          => $store_id,
+            'merchant_order_id' => (string) $order_id,
 
-        /* Save to order meta */
-        $order->update_meta_data('_pathao_consignment_id', $consignment_id);
-        $order->update_meta_data('_pathao_order_status', $order_status);
+            'recipient_name' => trim(
+                $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name()
+            ),
+            'recipient_phone' => $order->get_billing_phone() ?: '01700000000',
+            'recipient_address' => trim(
+                $order->get_shipping_address_1() . ', ' . $order->get_shipping_city()
+            ),
+
+            'delivery_type'  => $this->map_delivery_type($order),
+            'item_type'      => $this->get_item_type(),
+            'item_quantity'  => $order->get_item_count(),
+            'item_weight'    => $this->calculate_order_weight($order),
+
+            'recipient_city' => $location['city'],
+            'recipient_zone' => $location['zone'],
+
+            'item_description' => "WooCommerce Order #{$order_id}",
+
+            'amount_to_collect' => $order->get_payment_method() === 'cod'
+                ? (int) $order->get_total()
+                : 0,
+        ];
+
+        // Validate
+        $validate = $this->validate_order_payload($payload);
+        if ($validate !== true) {
+            return (object)['success' => false, 'messages' => [$validate]];
+        }
+
+        // Send request
+        $res = $this->request(
+            'wp_remote_post',
+            'aladdin/api/v1/orders',
+            ['body' => wp_json_encode($payload)]
+        );
+
+        if ($err = $this->has_errors($res)) {
+            return $err;
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($res));
+
+        if (empty($body->data->consignment_id)) {
+            return (object)[
+                'success' => false,
+                'messages' => ['Consignment ID not returned'],
+                'raw' => $body
+            ];
+        }
+
+        // Save meta
+        $order->update_meta_data('_pathao_consignment_id', $body->data->consignment_id);
+        $order->update_meta_data('_pathao_order_status', $body->data->order_status ?? 'Pending');
         $order->save();
 
-        error_log('[Pathao] Consignment saved: ' . $consignment_id);
-
-        /* Fire hook for logging table */
         do_action('pathao_order_created', (object)[
             'merchant_order_id' => $order_id,
-            'consignment_id'    => $consignment_id,
-            'order_status'      => $order_status,
+            'consignment_id'    => $body->data->consignment_id,
+            'order_status'      => $body->data->order_status ?? '',
         ]);
 
         return (object)[
             'success' => true,
-            'consignment_id' => $consignment_id,
-            'order_status' => $order_status,
+            'consignment_id' => $body->data->consignment_id,
+            'order_status' => $body->data->order_status ?? '',
             'data' => $body
         ];
     }
+
 
     /*-----------------------------------------
     | SEND BULK ORDERS TO PATHAO
@@ -594,30 +654,30 @@ class PathaoApiService
             'message' => $body->message ?? 'Bulk order request accepted',
         ];
     }
- 
+
     public function get_order_by_merchant_order_id(string $merchant_order_id): stdClass
     {
         $res = $this->request(
-        'wp_remote_get',
-        "aladdin/api/v1/orders?merchant_order_id={$merchant_order_id}"
+            'wp_remote_get',
+            "aladdin/api/v1/orders?merchant_order_id={$merchant_order_id}"
         );
 
         if ($err = $this->has_errors($res)) {
-        return $err;
+            return $err;
         }
 
         $body = json_decode(wp_remote_retrieve_body($res));
 
         if (empty($body->data->data[0])) {
-        return (object)[
-        'success' => false,
-        'messages' => ['Order not created yet']
-        ];
+            return (object)[
+                'success' => false,
+                'messages' => ['Order not created yet']
+            ];
         }
 
         return (object)[
-        'success' => true,
-        'data' => $body->data->data[0]
+            'success' => true,
+            'data' => $body->data->data[0]
         ];
     }
     private function validate_bulk_order(array $o)
@@ -681,7 +741,7 @@ class PathaoApiService
         }
 
         $status_code = wp_remote_retrieve_response_code($response);
-        $body = json_decode(wp_remote_retrieve_body($response)); 
+        $body = json_decode(wp_remote_retrieve_body($response));
 
         // error_log(print_r($body, true));
 
@@ -705,88 +765,88 @@ class PathaoApiService
             ],
         ];
     }
- 
+
     /*-----------------------------------------
  | PRICE CALCULATION (MERCHANT)
  ------------------------------------------*/
-public function price_calculation($args)
-{
-    error_log('[Pathao Price] price_calculation called');
+    public function price_calculation($args)
+    {
+        error_log('[Pathao Price] price_calculation called');
 
-    // Get store ID from settings
-    $settings = get_option('woocommerce_pathao_settings');
-    $store_id = (int) ($settings['store'] ?? 0);
+        // Get store ID from settings
+        $settings = get_option('woocommerce_pathao_settings');
+        $store_id = (int) ($settings['store'] ?? 0);
 
-    if (!$store_id) {
+        if (!$store_id) {
+            return (object)[
+                'success' => false,
+                'messages' => ['Store ID not configured']
+            ];
+        }
+
+        $body = wp_parse_args($args, [
+            'store_id'        => $store_id,
+            'item_type'       => 2,
+            'delivery_type'   => 48,
+            'item_weight'     => 0.5,
+            'recipient_city'  => 0,
+            'recipient_zone'  => 0,
+        ]);
+
+        //  Hard validation (Pathao requirement)
+        if (!$body['recipient_city'] || !$body['recipient_zone']) {
+            return (object)[
+                'success' => false,
+                'messages' => ['City and zone are required']
+            ];
+        }
+
+        error_log('[Pathao Price] Request payload: ' . wp_json_encode($body));
+
+        // Merchant endpoint + SOURCE header
+        $token = $this->ensure_access_token();
+        $res = $this->request(
+            'wp_remote_post',
+            'aladdin/api/v1/merchant/price-plan',
+            [
+                'body' => wp_json_encode($body),
+            ]
+        );
+
+
+        // Transport / API errors
+        if ($err = $this->has_errors($res)) {
+            error_log('[Pathao Price] API error: ' . wp_json_encode($res, true));
+            return $err;
+        }
+
+        $raw_body = wp_remote_retrieve_body($res);
+        error_log('[Pathao Price] Raw response: ' . $raw_body);
+
+        $d = json_decode($raw_body);
+
+        if (empty($d->data)) {
+            return (object)[
+                'success' => false,
+                'messages' => ['Price data missing'],
+                'raw' => $d,
+            ];
+        }
+
         return (object)[
-            'success' => false,
-            'messages' => ['Store ID not configured']
+            'success' => true,
+            'data' => (object)[
+                'price'              => $d->data->price ?? 0,
+                'discount'           => $d->data->discount ?? 0,
+                'promo_discount'     => $d->data->promo_discount ?? 0,
+                'plan_id'            => $d->data->plan_id ?? null,
+                'cod_enabled'        => $d->data->cod_enabled ?? 0,
+                'cod_percentage'     => $d->data->cod_percentage ?? 0,
+                'additional_charge'  => $d->data->additional_charge ?? 0,
+                'final_price'        => $d->data->final_price ?? 0,
+            ],
         ];
     }
-
-    $body = wp_parse_args($args, [
-        'store_id'        => $store_id,
-        'item_type'       => 2,
-        'delivery_type'   => 48,
-        'item_weight'     => 0.5,
-        'recipient_city'  => 0,
-        'recipient_zone'  => 0,
-    ]);
-
-    //  Hard validation (Pathao requirement)
-    if (!$body['recipient_city'] || !$body['recipient_zone']) {
-        return (object)[
-            'success' => false,
-            'messages' => ['City and zone are required']
-        ];
-    }
-
-    error_log('[Pathao Price] Request payload: ' . wp_json_encode($body));
-
-    // Merchant endpoint + SOURCE header
-    $token = $this->ensure_access_token();
-    $res = $this->request(
-        'wp_remote_post',
-        'aladdin/api/v1/merchant/price-plan',
-        [
-            'body' => wp_json_encode($body),
-        ]
-    );
-
-
-    // Transport / API errors
-    if ($err = $this->has_errors($res)) {
-        error_log('[Pathao Price] API error: ' . wp_json_encode($res, true));
-        return $err;
-    }
-
-    $raw_body = wp_remote_retrieve_body($res);
-    error_log('[Pathao Price] Raw response: ' . $raw_body);
-
-    $d = json_decode($raw_body);
-
-    if (empty($d->data)) {
-        return (object)[
-            'success' => false,
-            'messages' => ['Price data missing'],
-            'raw' => $d,
-        ];
-    }
-
-    return (object)[
-        'success' => true,
-        'data' => (object)[
-            'price'              => $d->data->price ?? 0,
-            'discount'           => $d->data->discount ?? 0,
-            'promo_discount'     => $d->data->promo_discount ?? 0,
-            'plan_id'            => $d->data->plan_id ?? null,
-            'cod_enabled'        => $d->data->cod_enabled ?? 0,
-            'cod_percentage'     => $d->data->cod_percentage ?? 0,
-            'additional_charge'  => $d->data->additional_charge ?? 0,
-            'final_price'        => $d->data->final_price ?? 0,
-        ],
-    ];
-} 
 
     /*-----------------------------------------
     | TOKEN GENERATION (PASSWORD GRANT)
@@ -876,7 +936,7 @@ public function price_calculation($args)
             ];
         }
 
-       $url = $this->get_base_url() . 'aladdin/api/v1/issue-token';
+        $url = $this->get_base_url() . 'aladdin/api/v1/issue-token';
 
         $body = [
             'client_id'     => $client_id,
@@ -919,4 +979,3 @@ public function price_calculation($args)
         ];
     }
 }
-
