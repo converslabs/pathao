@@ -1,13 +1,13 @@
 <?php
 
-namespace SpringDevs\Pathao\Admin;
+namespace ConversLabs\Pathao\Admin;
 
 /**
  * Plugin action links
  *
  * Class Links
  *
- * @package SpringDevs\Pathao\Admin
+ * @package ConversLabs\Pathao\Admin
  */
 class Links {
 

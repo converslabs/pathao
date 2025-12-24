@@ -1,6 +1,6 @@
 <?php
 
-namespace SpringDevs\Pathao\Services; 
+namespace ConversLabs\Pathao\Services; 
  
 use stdClass;
 

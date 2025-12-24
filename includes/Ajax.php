@@ -1,8 +1,8 @@
 <?php
-namespace SpringDevs\Pathao;
+namespace ConversLabs\Pathao;
 
-use SpringDevs\Pathao\Facades\PathaoAPI;
-use SpringDevs\Pathao\Services\PathaoApiService;
+use ConversLabs\Pathao\Facades\PathaoAPI;
+use ConversLabs\Pathao\Services\PathaoApiService;
 use WC_Order;
 
 if (! defined('ABSPATH')) {
@@ -307,7 +307,7 @@ class Ajax {
                 {
                     check_ajax_referer('pathao_nonce', 'nonce');
 
-                    $api = new \SpringDevs\Pathao\Services\PathaoApiService();
+                    $api = new \ConversLabs\Pathao\Services\PathaoApiService();
 
                     // WooCommerce Pathao settings
                     $settings = get_option('woocommerce_pathao_settings');
@@ -365,7 +365,7 @@ class Ajax {
                     wp_send_json_success(['message' => 'No Pathao orders to sync']);
                 }
 
-                $api = new \SpringDevs\Pathao\Services\PathaoApiService();
+                $api = new \ConversLabs\Pathao\Services\PathaoApiService();
                 $updated = 0;
 
                 foreach ($orders as $order) {

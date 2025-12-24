@@ -2,10 +2,10 @@
 /**
  * Frontend handler class
  *
- * @package SpringDevs\Pathao\Frontend
+ * @package ConversLabs\Pathao\Frontend
  */
 
-namespace SpringDevs\Pathao;
+namespace ConversLabs\Pathao;
 
 /**
  * Frontend handler class

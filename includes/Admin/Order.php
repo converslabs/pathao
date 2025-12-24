@@ -1,7 +1,7 @@
 <?php
-        namespace SpringDevs\Pathao\Admin;
+        namespace ConversLabs\Pathao\Admin;
 
-        use SpringDevs\Pathao\Services\PathaoApiService;
+        use ConversLabs\Pathao\Services\PathaoApiService;
         use WC_Order;
         if (!defined('ABSPATH')) {
             exit;

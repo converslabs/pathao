@@ -1,5 +1,5 @@
 <?php
-namespace SpringDevs\Pathao;
+namespace ConversLabs\Pathao;
 
 use WP_Error;
 use WP_REST_Request;

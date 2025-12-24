@@ -1,11 +1,11 @@
 <?php
 
-namespace SpringDevs\Pathao;
+namespace ConversLabs\Pathao;
 
 /**
  * Class Installer
  *
- * @package SpringDevs\Pathao
+ * @package ConversLabs\Pathao
  */
 class Installer {
 

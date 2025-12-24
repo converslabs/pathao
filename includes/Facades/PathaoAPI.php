@@ -1,8 +1,8 @@
 <?php
 
-namespace SpringDevs\Pathao\Facades;
+namespace ConversLabs\Pathao\Facades;
 
-use SpringDevs\Pathao\Services\PathaoApiService;
+use ConversLabs\Pathao\Services\PathaoApiService;
 
 /**
  * PathaoAPI facade.

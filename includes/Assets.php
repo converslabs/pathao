@@ -1,6 +1,6 @@
 <?php
 
-namespace SpringDevs\Pathao;
+namespace ConversLabs\Pathao;
 
 class Assets {
 

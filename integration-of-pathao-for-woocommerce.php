@@ -83,7 +83,7 @@ final class Sdevs_pathao
 
 	public function activate()
 	{
-		$installer = new SpringDevs\Pathao\Installer();
+		$installer = new ConversLabs\Pathao\Installer();
 		$installer->run();
 	}
 
@@ -95,7 +95,7 @@ final class Sdevs_pathao
 		require_once SDEVS_PATHAO_INCLUDES . '/Ajax.php';
 
 		if ($this->is_request('admin')) {
-			$this->container['admin'] = new SpringDevs\Pathao\Admin();
+			$this->container['admin'] = new ConversLabs\Pathao\Admin();
 		} 
 	}
 
@@ -108,10 +108,10 @@ final class Sdevs_pathao
 	public function init_classes()
 	{
 		// Initialize Ajax as singleton
-		$this->container['ajax'] = \SpringDevs\Pathao\Ajax::init();
+		$this->container['ajax'] = \ConversLabs\Pathao\Ajax::init();
 
-		$this->container['api']    = new \SpringDevs\Pathao\Api();
-		$this->container['assets'] = new \SpringDevs\Pathao\Assets();
+		$this->container['api']    = new \ConversLabs\Pathao\Api();
+		$this->container['assets'] = new \ConversLabs\Pathao\Assets();
 	}
 
 	public function localization_setup()

@@ -1,6 +1,7 @@
 === Pathao Integration for WooCommerce ===
 Contributors: converswp, shamsbd71
-Donate link: http://springdevs.com/
+Donate link: http://converslabs.com/
+https://converslabs.com/products/pathao
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
 Tested up to: 6.9

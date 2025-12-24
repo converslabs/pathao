@@ -1,6 +1,6 @@
 <?php
 
-use SpringDevs\Pathao\Facades\PathaoAPI;
+use ConversLabs\Pathao\Facades\PathaoAPI;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
