@@ -67,8 +67,6 @@ class PathaoApiService
         );
 
         $url = $this->get_base_url() . ltrim($path, '/');
-        // error_log("[Everything URL]: ". $url);
-        // error_log("[Everything]: ". print_r($final_args, true));
 
         // Always call the requested endpoint; previously a hardcoded URL broke all requests.
         $response = $func($url, $final_args);
@@ -201,8 +199,7 @@ class PathaoApiService
             "aladdin/api/v1/cities/{$city_id}/zone-list"
         );
 
-        if ($err = $this->has_errors($res)) {
-            error_log('[Pathao Zone Error] ' . print_r($err, true));
+        if ($err = $this->has_errors($res)) { 
             return $err;
         }
 
@@ -279,9 +276,7 @@ class PathaoApiService
             return $c;
         }
 
-        $res = $this->request('wp_remote_get', 'aladdin/api/v1/stores');
-
-        error_log('[Pathao Stores] Response: ' . print_r($res, true));
+        $res = $this->request('wp_remote_get', 'aladdin/api/v1/stores'); 
         if ($err = $this->has_errors($res)) {
             return $err;
         }
@@ -631,8 +626,6 @@ class PathaoApiService
             'orders' => $orders
         ];
 
-        error_log('[Pathao Bulk] Payload: ' . wp_json_encode($payload));
-
         $res = $this->request(
             'wp_remote_post',
             'aladdin/api/v1/orders/bulk',
@@ -743,7 +736,6 @@ class PathaoApiService
         $status_code = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response));
 
-        // error_log(print_r($body, true));
 
         if ($status_code !== 200 || empty($body->data)) {
             return (object) [
@@ -771,8 +763,6 @@ class PathaoApiService
  ------------------------------------------*/
     public function price_calculation($args)
     {
-        error_log('[Pathao Price] price_calculation called');
-
         // Get store ID from settings
         $settings = get_option('woocommerce_pathao_settings');
         $store_id = (int) ($settings['store'] ?? 0);
@@ -801,8 +791,6 @@ class PathaoApiService
             ];
         }
 
-        error_log('[Pathao Price] Request payload: ' . wp_json_encode($body));
-
         // Merchant endpoint + SOURCE header
         $token = $this->ensure_access_token();
         $res = $this->request(
@@ -816,12 +804,9 @@ class PathaoApiService
 
         // Transport / API errors
         if ($err = $this->has_errors($res)) {
-            error_log('[Pathao Price] API error: ' . wp_json_encode($res, true));
             return $err;
         }
-
         $raw_body = wp_remote_retrieve_body($res);
-        error_log('[Pathao Price] Raw response: ' . $raw_body);
 
         $d = json_decode($raw_body);
 

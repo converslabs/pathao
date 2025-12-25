@@ -21,39 +21,12 @@
 
                 add_action('init', array($this, 'load_hpos_hooks'));
 
-                add_action('admin_footer', array($this, 'load_pathao_popup_view'));
-
-                add_action('admin_menu', array($this, 'pathao_order_submenu'));
+                add_action('admin_footer', array($this, 'load_pathao_popup_view')); 
 
                 add_action('admin_init', [$this, 'sync_pending_bulk_orders']);
 
             }
-
-            public function pathao_order_submenu()
-            {
-                add_menu_page(
-                    'Pathao Orders Page Title',
-                    'Pathao Orders',
-                    'manage_options',
-                    'pathao-orders-menu-slug',
-                    array($this, 'pathao_orders_menu_content'),
-                    'dashicons-cart',
-                    22
-                );
-                  add_submenu_page(
-                    'pathao-orders-menu-slug', // Parent slug
-                    'Setup Pathao', // Page title
-                    'Setup Pathao',       // Menu title
-                    'manage_options',          // Capability
-                    'pathao-shipping-settings', // Menu slug
-                    array( $this, 'redirect_to_pathao' ) // Callback
-                 );
-            }
-
-            public function redirect_to_pathao() {
-                wp_safe_redirect( admin_url( 'admin.php?page=wc-settings&tab=shipping&section=pathao' ) );
-                exit;
-            }
+ 
 
             /**
              * Sync pending Pathao bulk orders when Pathao Orders page loads
@@ -89,69 +62,7 @@
                 foreach ($orders as $order) {
                     $this->update_order_info_from_pathao($order->get_id());
                 }
-            }
-
-            public function pathao_orders_menu_content()
-            {
-                ?>
-                <div class="wrap">
-                    <h1 class="wp-heading-inline"><?php esc_html_e( 'Pathao Courier Order Page', 'integration-of-pathao-for-woocommerce' ); ?></h1>
-                    <p class="description"><?php esc_html_e( 'Manage your deliveries without any distraction', 'integration-of-pathao-for-woocommerce' ); ?></p>
-                    <hr class="wp-header-end">
-
-                    <form method="get" style="margin: 20px 0;">
-                        <input type="hidden" name="page" value="pathao-orders-menu-slug">
-
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'Search orders:', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <input type="search" name="s" placeholder="Order ID, Customer, Pathao ID" value="<?php echo esc_attr($_GET['s'] ?? ''); ?>">
-                        </label>
-
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'From Date', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <input type="date" name="from_date" value="<?php echo esc_attr($_GET['from_date'] ?? ''); ?>">
-                        </label>_wc_settings
-
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'To Date', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <input type="date" name="to_date" value="<?php echo esc_attr($_GET['to_date'] ?? ''); ?>">
-                        </label>
-
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'Items Per Page', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <select name="per_page">
-                                <?php
-                                $per_page = $_GET['per_page'] ?? 20;
-                                foreach ([10, 20, 50] as $count) {
-                                    printf(
-                                        '<option value="%d" %s>%d items</option>',
-                                        $count,
-                                        selected($per_page, $count, false),
-                                        $count
-                                    );
-                                }
-                                ?>
-                            </select>
-                        </label>
-                    <button class="button">
-                        <?php esc_html_e( 'Filter', 'integration-of-pathao-for-woocommerce' ); ?>
-                    </button> 
-                    </form>
-
-                    <?php $this->render_pathao_orders_table(); ?>
-                </div>
-                <button  id="pathao-bulk-send" class="button button-primary"  style="margin: 10px 0;" > 
-                    <?php esc_html_e( 'Send Selected Orders to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </button>
-
-                    <button id="pathao-sync-status"
-                        class="button"
-                        style="margin:10px 0 0 10px;">
-                    🔄 Sync Order Status
-                </button>
-
-
-                <?php
-            }
+            } 
 
             private function render_pathao_orders_table()
             {
@@ -208,8 +119,6 @@
                             <?php foreach ($orders as $order) :
 
                                 $consignment_id = $order->get_meta('_pathao_consignment_id');
-                                            // error_log($consignment_id);
-
                                 $pathao_status = $order->get_meta('_pathao_order_status');
                                 $delivery_fee = $order->get_meta('_pathao_delivery_fee');
                             ?>
@@ -404,7 +313,7 @@
                 }
 
                 if ( ! $order_id ) {
-                    // error_log('[Pathao] Order ID missing in response');
+                    
                     return;
                 }
 

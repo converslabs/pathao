@@ -82,15 +82,15 @@ Sometimes, especially when new versions are released, it might only require some
 
 == Changelog ==
  
-= version 1.1.1 =
-* **feature:**  Pathao Shipping Integration for WooCommerce.
-* **update:** add separate Pathao Shipping Details Page 
-* **fix:** add translation and sanitization.
-* **remove:** previous Code.
-* **Improve:** loading and performance.
-* **refactor:** cleaned up Ajax handler structure for send_order_to_pathao with clearer order loading and payload building.
-* **refactor:** apply API call flow to properly fallback to PathaoApiService when facades are unavailable.
-* **security:** added stronger nonce verification and bailout conditions in all AJAX endpoints to block invalid requests.
+= Version 2.0 =
+* **Feature:** Pathao Shipping integration for WooCommerce – ship orders directly from your store.
+* **Fix:** Improved translation support and data sanitization for better stability and compatibility.
+* **Remove:** Cleaned up legacy and unused code for a leaner plugin.
+* **Improve:** Enhanced loading speed and overall performance.
+* **Refactor:** Streamlined the order submission process to Pathao with clearer order handling and data preparation.
+* **Refactor:** Improved API call flow with reliable fallback handling for smoother Pathao connectivity.
+* **Security:** Strengthened AJAX security with improved nonce verification to block invalid or unauthorized requests.
+
 
 = 1.1 =
 * **New:** Pathao column on order list.

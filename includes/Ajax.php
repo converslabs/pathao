@@ -113,8 +113,7 @@ class Ajax {
                 if (empty($_POST['order_ids']) || !is_array($_POST['order_ids'])) {
                     wp_send_json_error(['message' => 'No orders selected'], 400);
                 }
-
-                error_log('[Pathao Bulk] Order IDs: ' . print_r($_POST['order_ids'], true));
+                
 
                 $api = new PathaoApiService();
                 $sent = [];
@@ -321,9 +320,7 @@ class Ajax {
                         'recipient_city'  => absint($_POST['recipient_city'] ?? 0),
                         'recipient_zone'  => absint($_POST['recipient_zone'] ?? 0), 
                         // 'recipient_area' => absint($_POST['recipient_area'] ?? 0),
-                    ];
-
-                    // error_log('[AJAX Price Args] ' . wp_json_encode($args));
+                    ]; 
 
                     // Basic validation
                     if (!$args['store_id']) {
@@ -336,8 +333,7 @@ class Ajax {
 
                     $res = $api->price_calculation($args);
 
-                    if (empty($res->success)) {
-                        error_log('[AJAX Price Failed] ' . wp_json_encode($res));
+                    if (empty($res->success)) { 
                         wp_send_json_error([
                             'message' => $res->messages[0] ?? 'Price calculation failed'
                         ]);
