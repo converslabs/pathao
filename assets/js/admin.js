@@ -141,7 +141,12 @@ jQuery(document).ready(function ($) {
             },
             function (res) {
                 if (res.success && res.data) {
-                    $('#ptc-collectable').val(res.data.final_price);
+                    if (payment_status === 'Unpaid') {
+                        $('#ptc-collectable').val(order_total);
+                    } else {
+                        $('#ptc-collectable').val(0);
+                    }
+
                 } else {
                     $('#ptc-collectable').val('—');
                 }

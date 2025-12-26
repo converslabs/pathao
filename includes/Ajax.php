@@ -133,7 +133,7 @@ class Ajax {
                     }
 
                 $payload = [
-                    'store_id'            => (int) get_option('pathao_store_id'),
+                    'store_id'            => (int) get_option('woocommerce_pathao_settings')['store'],
                     'merchant_order_id'   => (string) $order_id,
 
                     'recipient_name'      => sanitize_text_field($form['recipient_name'] ?? ''),
@@ -234,86 +234,106 @@ class Ajax {
             * ---------------------------------------------------------------------- */
              public function send_order_to_pathao() {
 
-    if (!current_user_can('manage_woocommerce')) {
+    if ( ! current_user_can('manage_woocommerce') ) {
         wp_send_json_error(['message' => 'Permission denied'], 403);
     }
 
     check_ajax_referer('pathao_nonce', 'nonce');
 
     parse_str($_POST['form'] ?? '', $form);
-    error_log('🟢 PARSED FORM DATA: ' . print_r($form, true));
+    error_log('[Pathao] PARSED FORM: ' . print_r($form, true));
 
     $order_id = absint($_POST['order_id'] ?? 0);
-    if (!$order_id) {
+    if ( ! $order_id ) {
         wp_send_json_error(['message' => 'Invalid order ID']);
     }
 
     $order = wc_get_order($order_id);
-    if (!$order) {
+    if ( ! $order ) {
         wp_send_json_error(['message' => 'Order not found']);
     }
 
-    // ✅ SINGLE SOURCE OF STORE ID
-     $settings = get_option('woocommerce_pathao_settings');
-    $store_id = (int) ($settings['store'] ?? 0);
-    if (!$store_id) {
+    /* ---------------- STORE ID ---------------- */
+    $settings = get_option('woocommerce_pathao_settings');
+    $store_id = absint($settings['store'] ?? 0);
+
+    if ( ! $store_id ) {
         wp_send_json_error(['message' => 'Pathao store not configured']);
     }
 
-    // ✅ REQUIRED FIELDS
-    $required = ['recipient_city','recipient_zone','recipient_area'];
-    foreach ($required as $r) {
-        if (empty($form[$r])) {
-            wp_send_json_error(['message' => ucfirst(str_replace('_',' ', $r)) . ' is required']);
+    /* ---------------- REQUIRED LOCATION ---------------- */
+    foreach (['recipient_city','recipient_zone','recipient_area'] as $key) {
+        if ( empty($form[$key]) ) {
+            wp_send_json_error(['message' => ucfirst(str_replace('_',' ', $key)) . ' is required']);
         }
     }
 
-    // ✅ PHONE FALLBACK
+    /* ---------------- PHONE (STRICT) ---------------- */
     $phone = sanitize_text_field($form['recipient_phone'] ?? '');
-    if (strlen($phone) !== 11) {
+    if ( strlen($phone) !== 11 ) {
         $phone = $order->get_billing_phone();
     }
 
-    if (strlen($phone) !== 11) {
+    if ( strlen($phone) !== 11 ) {
         wp_send_json_error(['message' => 'Valid recipient phone is required']);
     }
 
-    // ✅ COD LOGIC
+    /* ---------------- WEIGHT & QUANTITY ---------------- */
+    $item_weight = max(
+        0.5,
+        (float) ($form['item_weight'] ?? 0.5)
+    );
+
+    $item_quantity = max(
+        1,
+        absint($form['item_quantity'] ?? $order->get_item_count())
+    );
+
+    /* ---------------- COD LOGIC (IMPORTANT) ---------------- */
+    // Pathao needs ONLY COD amount
     $amount_to_collect = $order->is_paid()
         ? 0
         : (float) $order->get_total();
 
+    /* ---------------- FINAL PAYLOAD ---------------- */
     $payload = [
-        'store_id'            => $store_id,
-        'merchant_order_id'   => (string) $order_id,
+        'store_id'           => $store_id,
+        'merchant_order_id'  => (string) $order_id,
 
-        'recipient_name'      => sanitize_text_field($form['recipient_name']),
-        'recipient_phone'     => $phone,
-        'recipient_address'   => sanitize_textarea_field($form['recipient_address']),
+        'recipient_name'     => sanitize_text_field(
+            $form['recipient_name'] ?: $order->get_formatted_shipping_full_name()
+        ),
+        'recipient_phone'    => $phone,
+        'recipient_address'  => sanitize_textarea_field(
+            $form['recipient_address'] ?: $order->get_shipping_address_1()
+        ),
 
-        'recipient_city'      => absint($form['recipient_city']),
-        'recipient_zone'      => absint($form['recipient_zone']),
-        'recipient_area'      => absint($form['recipient_area']),
+        'recipient_city'     => absint($form['recipient_city']),
+        'recipient_zone'     => absint($form['recipient_zone']),
+        'recipient_area'     => absint($form['recipient_area']),
 
-        'delivery_type'       => absint($form['delivery_type'] ?? 48),
-        'item_type'           => absint($form['item_type'] ?? 2),
-        'item_weight'         => max(0.5, (float) $form['item_weight']),
-        'item_quantity'       => max(1, absint($form['item_quantity'])),
+        'delivery_type'      => absint($form['delivery_type'] ?? 48),
+        'item_type'          => absint($form['item_type'] ?? 2),
 
-        'amount_to_collect'   => $amount_to_collect,
+        'item_weight'        => $item_weight,
+        'item_quantity'      => $item_quantity,
 
-        'special_instruction' => sanitize_textarea_field($form['special_instruction'] ?? ''),
-        'item_description'    => 'WooCommerce Order #' . $order_id,
+        // ✅ ONLY COD AMOUNT
+        'amount_to_collect'  => $amount_to_collect,
+
+        'special_instruction'=> sanitize_textarea_field($form['special_instruction'] ?? ''),
+        'item_description'   => 'WooCommerce Order #' . $order_id,
     ];
 
     error_log('🟣 FINAL PATHAO PAYLOAD: ' . wp_json_encode($payload));
 
-    $api = new \ConversLabs\Pathao\Services\PathaoApiService();
+    /* ---------------- API CALL ---------------- */
+    $api = new PathaoApiService();
     $res = $api->send_order_with_payload($payload);
 
-    if (!empty($res->success)) {
+    if ( ! empty($res->success) ) {
 
-        if (!empty($res->data->consignment_id)) {
+        if ( ! empty($res->data->consignment_id) ) {
             $order->update_meta_data('_pathao_consignment_id', $res->data->consignment_id);
             $order->update_meta_data('_pathao_order_status', $res->data->order_status ?? 'Pending');
             $order->save();
@@ -329,6 +349,7 @@ class Ajax {
         'message' => $res->messages[0] ?? 'Pathao order creation failed'
     ]);
 }
+
 
 
             /* -------------------------------------------------------------------------

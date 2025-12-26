@@ -125,7 +125,7 @@ jQuery(document).ready(function ($) {
 
         const formData = $("#ptc-pathao-form").serializeArray();
 
-    console.log("🟢 FORM DATA (serializeArray):", formData);
+    console.log("   FORM DATA (serializeArray):", formData);
 
         // Convert to object for readability
     const formObject = {};
@@ -133,7 +133,7 @@ jQuery(document).ready(function ($) {
         formObject[item.name] = item.value;
     });
 
-    console.log("🟢 FORM DATA (object):", formObject);
+    console.log("   FORM DATA (object):", formObject);
 
         $.post(AJAX_URL, {
             action: "send_order_to_pathao",

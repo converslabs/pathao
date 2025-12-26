@@ -60,7 +60,7 @@ class PathaoApiService
 
         $final_args = $args;
 
-        // ✅ SAFE header merge (DO NOT overwrite Authorization)
+        //   SAFE header merge (DO NOT overwrite Authorization)
         $final_args['headers'] = array_merge(
             $default_headers,
             $args['headers'] ?? []
@@ -533,15 +533,7 @@ public function send_order_with_payload(array $payload): stdClass
         'data' => $body->data,
     ];
 }
-
-
-    private function get_pathao_location(): array
-    {
-        return [
-            'city' => (int) get_option('pathao_city_id', 0),
-            'zone' => (int) get_option('pathao_zone_id', 0),
-        ];
-    }
+ 
 
     private function get_item_type(): int
     {
@@ -584,8 +576,7 @@ public function send_order_with_payload(array $payload): stdClass
         if (!$store_id) {
             return (object)['success' => false, 'messages' => ['Store not configured']];
         }
-
-        $location = $this->get_pathao_location();
+ 
 
         if (!$location['city'] || !$location['zone']) {
             return (object)[

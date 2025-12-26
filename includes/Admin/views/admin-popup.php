@@ -66,7 +66,7 @@
         <div class="ptc-grid">
           <div class="ptc-field">
             <label><?php esc_html_e( 'Collectable Amount', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="number" id="ptc-collectable" name="amount_to_collect">
+            <input type="number" id="ptc-collectable" name="amount_to_collect" readonly>
           </div>
 
           <div class="ptc-field">
