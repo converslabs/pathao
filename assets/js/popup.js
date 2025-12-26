@@ -123,6 +123,18 @@ jQuery(document).ready(function ($) {
 
         const orderId = $(this).data("order-id");
 
+        const formData = $("#ptc-pathao-form").serializeArray();
+
+    console.log("🟢 FORM DATA (serializeArray):", formData);
+
+        // Convert to object for readability
+    const formObject = {};
+    formData.forEach(item => {
+        formObject[item.name] = item.value;
+    });
+
+    console.log("🟢 FORM DATA (object):", formObject);
+
         $.post(AJAX_URL, {
             action: "send_order_to_pathao",
             order_id: orderId,

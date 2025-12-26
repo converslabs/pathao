@@ -37,12 +37,12 @@
         <div class="ptc-grid">
           <div class="ptc-field">
             <label><?php esc_html_e( 'Name', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-name">
+            <input type="text" id="ptc-name"  name="recipient_name">
           </div>
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Phone', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-phone">
+            <input type="text" id="ptc-phone" name="recipient_phone">
           </div>
         </div>
 
@@ -66,23 +66,23 @@
         <div class="ptc-grid">
           <div class="ptc-field">
             <label><?php esc_html_e( 'Collectable Amount', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="number" id="ptc-collectable">
+            <input type="number" id="ptc-collectable" name="amount_to_collect">
           </div>
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Weight (kg)', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="number" id="ptc-weight" step="0.01">
+            <input type="number" id="ptc-weight" step="0.01" name="item_weight">
           </div>
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Quantity', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="number" id="ptc-quantity">
+            <input type="number" id="ptc-quantity" name="item_quantity">
           </div>
         </div>
 
         <div class="ptc-field">
           <label><?php esc_html_e( 'Full Address', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <textarea id="ptc-address"></textarea>
+          <textarea id="ptc-address" name="recipient_address"></textarea>
         </div>
 
         <div class="ptc-grid">
@@ -93,24 +93,24 @@
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'City', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-city"></select>
+            <select id="ptc-city"  name="recipient_city"></select>
           </div>
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Zone', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-zone"></select>
+            <select id="ptc-zone"  name="recipient_zone"></select>
           </div>
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Area', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-area"></select>
+            <select id="ptc-area" name="recipient_area"></select>
           </div>
         </div>
 
         <div class="ptc-grid">
           <div class="ptc-field">
             <label><?php esc_html_e( 'Delivery Type', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-delivery-type">
+            <select id="ptc-delivery-type" name="delivery_type">
               <option value="48"><?php esc_html_e( 'Normal Delivery', 'integration-of-pathao-for-woocommerce' ); ?></option>
               <option value="12"><?php esc_html_e( 'Express Delivery', 'integration-of-pathao-for-woocommerce' ); ?></option>
             </select>
@@ -118,7 +118,7 @@
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Item Type', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-item-type">
+            <select id="ptc-item-type"  name="item_type">
               <option value="2"><?php esc_html_e( 'Parcel', 'integration-of-pathao-for-woocommerce' ); ?></option>
               <option value="1"><?php esc_html_e( 'Document', 'integration-of-pathao-for-woocommerce' ); ?></option>
             </select>
@@ -127,12 +127,12 @@
 
         <div class="ptc-field">
           <label><?php esc_html_e( 'Note', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <textarea id="ptc-note"></textarea>
+          <textarea id="ptc-note"  name="note"></textarea>
         </div>
 
         <div class="ptc-field">
           <label><?php esc_html_e( 'Special Instruction', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <textarea id="ptc-instruction"></textarea>
+          <textarea id="ptc-instruction" name="special_instruction"></textarea>
         </div>
       </div>
 

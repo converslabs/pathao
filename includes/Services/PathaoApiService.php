@@ -469,6 +469,70 @@ class PathaoApiService
         // Pathao rule: minimum 0.5 KG
         return max(0.5, round($weight, 2));
     }
+public function send_order_with_payload(array $payload): stdClass
+{
+    // Basic validation
+    $required = [
+        'store_id',
+        'recipient_name',
+        'recipient_phone',
+        'recipient_address',
+        'recipient_city',
+        'recipient_zone',
+        'recipient_area',
+        'delivery_type',
+        'item_type',
+        'item_weight',
+        'item_quantity',
+        'amount_to_collect',
+    ];
+
+     foreach ($required as $field) {
+        if (!isset($payload[$field])) {
+            return (object)[
+                'success' => false,
+                'messages' => ["Missing field: {$field}"]
+            ];
+        }
+    }
+
+
+    if (strlen($payload['recipient_phone']) !== 11) {
+        return (object)[
+            'success' => false,
+            'messages' => ['Recipient phone must be 11 digits']
+        ];
+    }
+
+    error_log('[Pathao API] Order Payload: ' . wp_json_encode($payload));
+
+    $res = $this->request(
+        'wp_remote_post',
+        'aladdin/api/v1/orders',
+        [
+            'body' => wp_json_encode($payload),
+        ]
+    );
+
+    if ($err = $this->has_errors($res)) {
+        return $err;
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($res));
+
+    if (empty($body->data->consignment_id)) {
+        return (object)[
+            'success' => false,
+            'messages' => ['Consignment ID not returned'],
+            'raw' => $body
+        ];
+    }
+
+    return (object)[
+        'success' => true,
+        'data' => $body->data,
+    ];
+}
 
 
     private function get_pathao_location(): array
