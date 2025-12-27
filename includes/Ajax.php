@@ -102,8 +102,8 @@ class Ajax {
             /* -------------------------------------------------------------------------
             * BULK ORDER HANDLER (Pathao does NOT support true bulk)
             * ---------------------------------------------------------------------- */
-            public function send_bulk_orders_to_pathao() {
-
+          public function send_bulk_orders_to_pathao()
+            {
                 if (!current_user_can('manage_woocommerce')) {
                     wp_send_json_error(['message' => 'Permission denied'], 403);
                 }
@@ -111,79 +111,88 @@ class Ajax {
                 check_ajax_referer('pathao_nonce', 'nonce');
 
                 if (empty($_POST['order_ids']) || !is_array($_POST['order_ids'])) {
-                    wp_send_json_error(['message' => 'No orders selected'], 400);
+                    wp_send_json_error(['message' => 'No orders selected']);
                 }
 
-                error_log('[Pathao Bulk] Order IDs: ' . print_r($_POST['order_ids'], true));
+                $settings = get_option('woocommerce_pathao_settings');
+                $store_id = absint($settings['store'] ?? 0);
+                if (!$store_id) {
+                    wp_send_json_error(['message' => 'Pathao store not configured']);
+                }
 
                 $api = new PathaoApiService();
-                $sent = [];
-                $failed = [];
+                $sent = $skipped = $failed = [];
 
                 foreach ($_POST['order_ids'] as $order_id) {
 
-                    $order = wc_get_order((int)$order_id);
+                    $order_id = absint($order_id);
+                    $order = wc_get_order($order_id);
+
                     if (!$order) {
                         $failed[$order_id] = 'Order not found';
                         continue;
                     }
 
                     if ($order->get_meta('_pathao_consignment_id')) {
-                        continue; // already sent
+                        $skipped[] = $order_id;
+                        continue;
                     }
 
-                $payload = [
-                    'store_id'            => (int) get_option('woocommerce_pathao_settings')['store'],
-                    'merchant_order_id'   => (string) $order_id,
+                    $city = absint($order->get_meta('_pathao_city'));
+                    $zone = absint($order->get_meta('_pathao_zone'));
+                    $area = absint($order->get_meta('_pathao_area'));
+error_log('[Pathao Bulk] city = ' . $city);
+error_log('[Pathao Bulk] zone = ' . $zone);
+error_log('[Pathao Bulk] area = ' . $area);
 
-                    'recipient_name'      => sanitize_text_field($form['recipient_name'] ?? ''),
-                    'recipient_phone'     => sanitize_text_field($form['recipient_phone'] ?? ''),
-                    'recipient_address'   => sanitize_text_field($form['recipient_address'] ?? ''),
+                    if (!$city || !$zone) {
+                        $failed[$order_id] = 'Recipient city or zone missing';
+                        continue;
+                    }
 
-                    'recipient_city'      => absint($form['recipient_city'] ?? 0),
-                    'recipient_zone'      => absint($form['recipient_zone'] ?? 0),
-                    'recipient_area'      => absint($form['recipient_area'] ?? 0),
+                    $phone = $order->get_billing_phone();
+                    if (strlen($phone) !== 11) {
+                        $failed[$order_id] = 'Invalid phone number';
+                        continue;
+                    }
 
-                    'delivery_type'       => absint($form['delivery_type'] ?? 48),
-                    'item_type'           => absint($form['item_type'] ?? 2),
-                    'item_weight'         => (float) ($form['item_weight'] ?? 0.5),
-                    'item_quantity'       => absint($form['item_quantity'] ?? 1),
+                    $payload = [
+                        'store_id'          => $store_id,
+                        'merchant_order_id' => (string) $order_id,
+                        'recipient_name'    => $order->get_formatted_shipping_full_name(),
+                        'recipient_phone'   => $phone,
+                        'recipient_address' => $order->get_shipping_address_1(),
+                        'recipient_city'    => $city,
+                        'recipient_zone'    => $zone,
+                        'recipient_area'    => $area,
+                        'delivery_type'     => 48,
+                        'item_type'         => 2,
+                        'item_weight'       => max(0.5, (float) $order->get_meta('_pathao_weight') ?: 0.5),
+                        'item_quantity'     => $order->get_item_count(),
+                        'amount_to_collect' => $order->is_paid() ? 0 : (float) $order->get_total(),
+                        'item_description'  => 'WooCommerce Order #' . $order_id,
+                    ];
 
-                    'amount_to_collect'   => (float) ($form['amount_to_collect'] ?? 0),
+                    $res = $api->send_order_with_payload($payload);
 
-                    'note'                => sanitize_textarea_field($form['note'] ?? ''),
-                    'special_instruction' => sanitize_textarea_field($form['special_instruction'] ?? ''),
-                ];
-
-
-                error_log('🟣 SEND ORDER PAYLOAD: ' . wp_json_encode($payload));
-
-                    $res = $api->send_order($order->get_id(), $payload);
-
-                    if (isset($res->success) && $res->success) {
-
-                        if (!empty($res->data->consignment_id)) {
-                            $order->update_meta_data('_pathao_consignment_id', $res->data->consignment_id);
-                        }
-
-                        if (!empty($res->data->order_status)) {
-                            $order->update_meta_data('_pathao_order_status', $res->data->order_status);
-                        }
-
+                    if (!empty($res->success) && !empty($res->data->consignment_id)) {
+                        $order->update_meta_data('_pathao_consignment_id', $res->data->consignment_id);
+                        $order->update_meta_data('_pathao_order_status', $res->data->order_status ?? 'Pending');
                         $order->save();
-                        $sent[] = $order->get_id();
-
+                        $sent[] = $order_id;
                     } else {
-                        $failed[$order->get_id()] = $res->message ?? 'API failed';
+                        $failed[$order_id] = $res->messages[0] ?? 'Pathao API failed';
                     }
                 }
 
                 wp_send_json_success([
-                    'sent_orders'   => $sent,
-                    'failed_orders' => $failed,
+                    'sent'    => $sent,
+                    'skipped' => $skipped,
+                    'failed'  => $failed,
                 ]);
             }
 
+ 
 
             public function get_wc_order_info() {
 
@@ -232,123 +241,87 @@ class Ajax {
             /* -------------------------------------------------------------------------
             * SINGLE ORDER SEND
             * ---------------------------------------------------------------------- */
-             public function send_order_to_pathao() {
+            public function send_order_to_pathao() {
 
-    if ( ! current_user_can('manage_woocommerce') ) {
-        wp_send_json_error(['message' => 'Permission denied'], 403);
-    }
+                    if (!current_user_can('manage_woocommerce')) {
+                        wp_send_json_error(['message' => 'Permission denied'], 403);
+                    }
 
-    check_ajax_referer('pathao_nonce', 'nonce');
+                    check_ajax_referer('pathao_nonce', 'nonce');
 
-    parse_str($_POST['form'] ?? '', $form);
-    error_log('[Pathao] PARSED FORM: ' . print_r($form, true));
+                    parse_str($_POST['form'] ?? '', $form);
 
-    $order_id = absint($_POST['order_id'] ?? 0);
-    if ( ! $order_id ) {
-        wp_send_json_error(['message' => 'Invalid order ID']);
-    }
+                    $order_id = absint($_POST['order_id'] ?? 0);
+                    if (!$order_id) {
+                        wp_send_json_error(['message' => 'Invalid order ID']);
+                    }
 
-    $order = wc_get_order($order_id);
-    if ( ! $order ) {
-        wp_send_json_error(['message' => 'Order not found']);
-    }
+                    $order = wc_get_order($order_id);
+                    if (!$order) {
+                        wp_send_json_error(['message' => 'Order not found']);
+                    }
 
-    /* ---------------- STORE ID ---------------- */
-    $settings = get_option('woocommerce_pathao_settings');
-    $store_id = absint($settings['store'] ?? 0);
+                    $settings = get_option('woocommerce_pathao_settings');
+                    $store_id = absint($settings['store'] ?? 0);
+                    if (!$store_id) {
+                        wp_send_json_error(['message' => 'Pathao store not configured']);
+                    }
 
-    if ( ! $store_id ) {
-        wp_send_json_error(['message' => 'Pathao store not configured']);
-    }
+                    foreach (['recipient_city','recipient_zone','recipient_area'] as $key) {
+                        if (empty($form[$key])) {
+                            wp_send_json_error(['message' => ucfirst(str_replace('_',' ', $key)) . ' is required']);
+                        }
+                    }
 
-    /* ---------------- REQUIRED LOCATION ---------------- */
-    foreach (['recipient_city','recipient_zone','recipient_area'] as $key) {
-        if ( empty($form[$key]) ) {
-            wp_send_json_error(['message' => ucfirst(str_replace('_',' ', $key)) . ' is required']);
-        }
-    }
+                    $phone = sanitize_text_field($form['recipient_phone'] ?? $order->get_billing_phone());
+                    if (strlen($phone) !== 11) {
+                        wp_send_json_error(['message' => 'Valid phone required']);
+                    }
 
-    /* ---------------- PHONE (STRICT) ---------------- */
-    $phone = sanitize_text_field($form['recipient_phone'] ?? '');
-    if ( strlen($phone) !== 11 ) {
-        $phone = $order->get_billing_phone();
-    }
+                    $item_weight   = max(0.5, (float) ($form['item_weight'] ?? 0.5));
+                    $item_quantity = max(1, absint($form['item_quantity'] ?? $order->get_item_count()));
 
-    if ( strlen($phone) !== 11 ) {
-        wp_send_json_error(['message' => 'Valid recipient phone is required']);
-    }
+                    $amount_to_collect = $order->is_paid() ? 0 : (float) $order->get_total();
 
-    /* ---------------- WEIGHT & QUANTITY ---------------- */
-    $item_weight = max(
-        0.5,
-        (float) ($form['item_weight'] ?? 0.5)
-    );
+                    /* SAVE LOCATION FOR BULK USE */
+                    $order->update_meta_data('_pathao_city', absint($form['recipient_city']));
+                    $order->update_meta_data('_pathao_zone', absint($form['recipient_zone']));
+                    $order->update_meta_data('_pathao_area', absint($form['recipient_area']));
+                    $order->update_meta_data('_pathao_weight', $item_weight);
+                    $order->save();
 
-    $item_quantity = max(
-        1,
-        absint($form['item_quantity'] ?? $order->get_item_count())
-    );
+                    $payload = [
+                        'store_id'           => $store_id,
+                        'merchant_order_id'  => (string) $order_id,
+                        'recipient_name'     => sanitize_text_field($form['recipient_name'] ?: $order->get_formatted_shipping_full_name()),
+                        'recipient_phone'    => $phone,
+                        'recipient_address'  => sanitize_textarea_field($form['recipient_address'] ?: $order->get_shipping_address_1()),
+                        'recipient_city'     => absint($form['recipient_city']),
+                        'recipient_zone'     => absint($form['recipient_zone']),
+                        'recipient_area'     => absint($form['recipient_area']),
+                        'delivery_type'      => absint($form['delivery_type'] ?? 48),
+                        'item_type'          => absint($form['item_type'] ?? 2),
+                        'item_weight'        => $item_weight,
+                        'item_quantity'      => $item_quantity,
+                        'amount_to_collect'  => $amount_to_collect,
+                        'special_instruction'=> sanitize_textarea_field($form['special_instruction'] ?? ''),
+                        'item_description'   => 'WooCommerce Order #' . $order_id,
+                    ];
 
-    /* ---------------- COD LOGIC (IMPORTANT) ---------------- */
-    // Pathao needs ONLY COD amount
-    $amount_to_collect = $order->is_paid()
-        ? 0
-        : (float) $order->get_total();
+                    $api = new PathaoApiService();
+                    $res = $api->send_order_with_payload($payload);
 
-    /* ---------------- FINAL PAYLOAD ---------------- */
-    $payload = [
-        'store_id'           => $store_id,
-        'merchant_order_id'  => (string) $order_id,
+                    if (!empty($res->success) && !empty($res->data->consignment_id)) {
+                        $order->update_meta_data('_pathao_consignment_id', $res->data->consignment_id);
+                        $order->update_meta_data('_pathao_order_status', $res->data->order_status ?? 'Pending');
+                        $order->save();
 
-        'recipient_name'     => sanitize_text_field(
-            $form['recipient_name'] ?: $order->get_formatted_shipping_full_name()
-        ),
-        'recipient_phone'    => $phone,
-        'recipient_address'  => sanitize_textarea_field(
-            $form['recipient_address'] ?: $order->get_shipping_address_1()
-        ),
+                        wp_send_json_success(['message' => 'Order sent to Pathao']);
+                    }
 
-        'recipient_city'     => absint($form['recipient_city']),
-        'recipient_zone'     => absint($form['recipient_zone']),
-        'recipient_area'     => absint($form['recipient_area']),
+                    wp_send_json_error(['message' => $res->messages[0] ?? 'Pathao failed']);
+                }
 
-        'delivery_type'      => absint($form['delivery_type'] ?? 48),
-        'item_type'          => absint($form['item_type'] ?? 2),
-
-        'item_weight'        => $item_weight,
-        'item_quantity'      => $item_quantity,
-
-        // ✅ ONLY COD AMOUNT
-        'amount_to_collect'  => $amount_to_collect,
-
-        'special_instruction'=> sanitize_textarea_field($form['special_instruction'] ?? ''),
-        'item_description'   => 'WooCommerce Order #' . $order_id,
-    ];
-
-    error_log('🟣 FINAL PATHAO PAYLOAD: ' . wp_json_encode($payload));
-
-    /* ---------------- API CALL ---------------- */
-    $api = new PathaoApiService();
-    $res = $api->send_order_with_payload($payload);
-
-    if ( ! empty($res->success) ) {
-
-        if ( ! empty($res->data->consignment_id) ) {
-            $order->update_meta_data('_pathao_consignment_id', $res->data->consignment_id);
-            $order->update_meta_data('_pathao_order_status', $res->data->order_status ?? 'Pending');
-            $order->save();
-        }
-
-        wp_send_json_success([
-            'message' => 'Order sent to Pathao successfully',
-            'data'    => $res->data,
-        ]);
-    }
-
-    wp_send_json_error([
-        'message' => $res->messages[0] ?? 'Pathao order creation failed'
-    ]);
-}
 
 
 

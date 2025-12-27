@@ -28,6 +28,8 @@ jQuery(document).ready(function ($) {
 
     $(document).on("click", "#ptc-send-cancel", closePathaoModal);
 
+
+    // City, Zone, and Area data is missing. Please preload it to continue.
     /* ---------------- ORDER INFO ---------------- */
     function loadOrderData(orderId) {
         $.post(AJAX_URL, {

@@ -160,29 +160,59 @@ jQuery(document).ready(function ($) {
      * Send Selected Orders to Pathao
      * --------------------------------------------------- */
     $(document).on('click', '#pathao-bulk-send', function (e) {
-        e.preventDefault();
+    e.preventDefault();
 
-        const orders = [];
-        $('.pathao-order-checkbox:checked').each(function () {
-            orders.push($(this).val());
-        });
+    const orders = [];
 
-        if (!orders.length) {
-            alert('Please select at least one order');
-            return;
-        }
-
-        if (!confirm('Send selected orders to Pathao?')) return;
-
-        ajaxPost('send_bulk_orders_to_pathao', { order_ids: orders }, function (res) {
-            if (res.success) {
-                alert('Orders sent to Pathao successfully');
-                location.reload();
-            } else {
-                alert((res.data && res.data.message) || 'Failed to send orders');
-            }
-        });
+    $('.pathao-order-checkbox:checked').each(function () {
+        orders.push($(this).val());
     });
+
+    if (!orders.length) {
+        alert('Please select at least one order');
+        return;
+    }
+
+    if (!confirm('Send selected orders to Pathao?')) {
+        return;
+    }
+
+    $.post(
+        pathao_vars.ajax_url,
+        {
+            action: 'send_bulk_orders_to_pathao',
+            nonce: pathao_vars.nonce,
+            order_ids: orders
+        },
+        function (res) {
+
+            if (!res || !res.success) {
+                alert(res?.data?.message || 'Bulk send failed');
+                return;
+            }
+
+            let msg = '';
+
+            if (res.data.sent.length) {
+                msg += 'Sent: ' + res.data.sent.join(', ') + '\n';
+            }
+
+            if (res.data.skipped.length) {
+                msg += 'Skipped: ' + res.data.skipped.join(', ') + '\n';
+            }
+
+            if (Object.keys(res.data.failed).length) {
+                msg += 'Failed:\n';
+                for (const id in res.data.failed) {
+                    msg += 'Order #' + id + ': ' + res.data.failed[id] + '\n';
+                }
+            }
+
+            alert(msg || 'Completed');
+            location.reload();
+        }
+    );
+});
 
     /* ---------------------------------------------------
      * Sync Order Status
@@ -200,3 +230,5 @@ jQuery(document).ready(function ($) {
         });
     });
 });
+
+

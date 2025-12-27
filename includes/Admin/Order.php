@@ -46,14 +46,25 @@
                     'Setup Pathao',       // Menu title
                     'manage_options',          // Capability
                     'pathao-shipping-settings', // Menu slug
-                    array( $this, 'redirect_to_pathao' ) // Callback
+                    array( $this, 'render_pathao_setup_page' ) // Callback
                  );
             }
 
-            public function redirect_to_pathao() {
-                wp_safe_redirect( admin_url( 'admin.php?page=wc-settings&tab=shipping&section=pathao' ) );
-                exit;
-            }
+             public function render_pathao_setup_page()
+                {
+                    if ( ! current_user_can( 'manage_options' ) ) {
+                        return;
+                    }
+
+                    $view = plugin_dir_path( dirname( __DIR__ ) ) . 'includes/Admin/views/setup.php';
+
+                    if ( file_exists( $view ) ) {
+                        include $view;
+                    } else {
+                        echo '<div class="notice notice-error"><p>Setup view file not found.</p></div>';
+                    }
+                }
+
 
             /**
              * Sync pending Pathao bulk orders when Pathao Orders page loads
