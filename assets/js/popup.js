@@ -31,7 +31,7 @@ jQuery(document).ready(function ($) {
 
     // City, Zone, and Area data is missing. Please preload it to continue.
     /* ---------------- ORDER INFO ---------------- */
-     function loadOrderData(orderId) {
+      function loadOrderData(orderId) {
             $.post(AJAX_URL, {
                 action: "get_wc_order_info",
                 order_id: orderId,
@@ -59,6 +59,7 @@ jQuery(document).ready(function ($) {
                 renderOrderItems(data.items);
             });
         }
+
 
     
     function renderOrderItems(items) {

@@ -15,18 +15,18 @@
         <div class="ptc-grid">
           <div class="ptc-field">
             <label><?php esc_html_e( 'Total Price', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-total-price" readonly>
+           <input type="text" id="ptc-total-price" name="total_price" readonly>
           </div>
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Payment Status', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-payment-status" readonly>
+           <input type="text" id="ptc-payment-status" name="payment_status" readonly>
           </div>
         </div>
 
         <div class="ptc-field">
           <label><?php esc_html_e( 'Order Items', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <div id="ptc-order-items" readonly></div>
+          <div id="ptc-order-items"></div>
         </div>
       </div>
 
@@ -54,7 +54,7 @@
 
           <div class="ptc-field">
             <label><?php esc_html_e( 'Order Number', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-order-number" readonly>
+            <input type="text" id="ptc-order-number" name="order_number" readonly>
           </div>
         </div>
       </div>

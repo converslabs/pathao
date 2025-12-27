@@ -26,8 +26,11 @@
                 add_action('admin_menu', array($this, 'pathao_order_submenu'));
 
                 add_action('admin_init', [$this, 'sync_pending_bulk_orders']);
+ 
 
             }
+ 
+
 
             public function pathao_order_submenu()
             {

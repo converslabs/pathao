@@ -256,6 +256,40 @@ class Ajax {
         wp_send_json_error( [ 'message' => 'Failed to load areas' ] );
     }
 
+    public function get_wc_order_info() {
+    $this->verify_request();
+
+    $order_id = absint($_POST['order_id']);
+    $order = wc_get_order($order_id);
+
+    if (!$order) {
+        wp_send_json_error(['message' => 'Order not found']);
+    }
+
+    $items = [];
+    foreach ($order->get_items() as $item) {
+        $product = $item->get_product();
+        $items[] = [
+            'name'  => $item->get_name(),
+            'image' => $product ? wp_get_attachment_image_url($product->get_image_id(), 'thumbnail') : '',
+        ];
+    }
+
+    wp_send_json_success([
+        'name'            => trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name()),
+        'phone'           => $order->get_billing_phone(),
+        'address'         => $order->get_billing_address_1(),
+        'total'           => (float) $order->get_total(),
+        'payment_status'  => wc_get_order_status_name($order->get_status()),
+        'quantity'        => $order->get_item_count(),
+        'weight'          => 1,
+        'cod_amount'      => $order->get_payment_method() === 'cod'
+                                ? (float) $order->get_total()
+                                : 0,
+        'items'           => $items,
+    ]);
+}
+
     /**
      * Price Calculation
      */
