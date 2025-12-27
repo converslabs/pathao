@@ -307,228 +307,165 @@ class Ajax
     }
 
 
-    public function get_bulk_orders_data()
-    {
-        if (! current_user_can('manage_woocommerce')) {
-            wp_send_json_error(['message' => 'Permission denied'], 403);
-        }
-
-        check_ajax_referer('pathao_nonce', 'nonce');
-
-        $order_ids = isset($_POST['order_ids']) ? array_map('absint', (array) $_POST['order_ids']) : [];
-        if (empty($order_ids)) {
-            wp_send_json_error(['message' => 'No orders selected']);
-        }
-
-        // Get cities for dropdown
-        $api = new \ConversLabs\Pathao\Services\PathaoApiService();
-        $cities_response = $api->get_cities();
-        $cities = (! empty($cities_response->success) && ! empty($cities_response->data))
-            ? $cities_response->data
-            : [];
-
-        ob_start();
-        ?>
-        <?php foreach ($order_ids as $order_id) : ?>
-            <?php
-            $order = wc_get_order($order_id);
-            if (! $order) {
-                continue;
-            }
-
-            // Get existing Pathao meta data if available
-            $existing_city = $order->get_meta('_pathao_city');
-            $existing_zone = $order->get_meta('_pathao_zone');
-            $existing_area = $order->get_meta('_pathao_area');
-            $existing_weight = $order->get_meta('_pathao_weight');
-
-            // Get order data
-            $recipient_name = $order->get_formatted_shipping_full_name() ?: $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
-            $recipient_phone = $order->get_billing_phone();
-            $recipient_address = $order->get_shipping_address_1() ?: $order->get_billing_address_1();
-            $item_quantity = $order->get_item_count();
-            $item_weight = $existing_weight ?: 0.5;
-            $amount_to_collect = $order->is_paid() ? 0 : $order->get_total();
-
-            // Check if already sent
-            $consignment_id = $order->get_meta('_pathao_consignment_id');
-            $is_sent = ! empty($consignment_id);
-            ?>
-            <tr data-order-id="<?php echo esc_attr($order_id); ?>" <?php echo $is_sent ? 'style="opacity:0.6;"' : ''; ?>>
-                <td>
-                    #<?php echo esc_html($order_id); ?>
-                    <input type="hidden" name="orders[<?php echo esc_attr($order_id); ?>][order_id]" value="<?php echo esc_attr($order_id); ?>">
-                    <?php if ($is_sent) : ?>
-                        <br><small style="color:orange;">Already sent</small>
-                    <?php endif; ?>
-                </td>
-
-                <td>
-                    <input type="text" 
-                           name="orders[<?php echo esc_attr($order_id); ?>][recipient_name]"
-                           value="<?php echo esc_attr($recipient_name); ?>"
-                           class="regular-text"
-                           required>
-                </td>
-
-                <td>
-                    <input type="text" 
-                           name="orders[<?php echo esc_attr($order_id); ?>][recipient_phone]"
-                           value="<?php echo esc_attr($recipient_phone); ?>"
-                           class="regular-text"
-                           required>
-                    <br>
-                    <input type="text" 
-                           name="orders[<?php echo esc_attr($order_id); ?>][recipient_secondary_phone]"
-                           placeholder="Secondary (optional)"
-                           class="regular-text"
-                           style="margin-top:5px;">
-                </td>
-
-                <td>
-                    <select name="orders[<?php echo esc_attr($order_id); ?>][recipient_city]"
-                            class="pathao-bulk-city regular-text"
-                            data-selected-city="<?php echo esc_attr($existing_city); ?>"
-                            required>
-                        <option value="">Select City</option>
-                        <?php foreach ($cities as $city) : ?>
-                            <option value="<?php echo esc_attr($city->id); ?>" <?php selected($existing_city, $city->id); ?>>
-                                <?php echo esc_html($city->name); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-
-                <td>
-                    <select name="orders[<?php echo esc_attr($order_id); ?>][recipient_zone]"
-                            class="pathao-bulk-zone regular-text"
-                            data-order-id="<?php echo esc_attr($order_id); ?>"
-                            data-selected-zone="<?php echo esc_attr($existing_zone); ?>"
-                            required>
-                        <option value="">Select Zone</option>
-                        <?php if ($existing_zone && $existing_city) : ?>
-                            <?php
-                            $zones_response = PathaoAPI::get_city_zones($existing_city);
-                            if (! empty($zones_response->success) && ! empty($zones_response->data)) :
-                                foreach ($zones_response->data as $zone) :
-                            ?>
-                                <option value="<?php echo esc_attr($zone->id); ?>" <?php selected($existing_zone, $zone->id); ?>>
-                                    <?php echo esc_html($zone->name); ?>
-                                </option>
-                            <?php
-                                endforeach;
-                            endif;
-                            ?>
-                        <?php endif; ?>
-                    </select>
-                </td>
-
-                <td>
-                    <select name="orders[<?php echo esc_attr($order_id); ?>][recipient_area]"
-                            class="pathao-bulk-area regular-text"
-                            data-order-id="<?php echo esc_attr($order_id); ?>"
-                            data-selected-area="<?php echo esc_attr($existing_area); ?>">
-                        <option value="">Select Area</option>
-                        <?php if ($existing_area && $existing_zone) : ?>
-                            <?php
-                            $areas_response = PathaoAPI::get_areas($existing_zone);
-                            if (! empty($areas_response->success) && ! empty($areas_response->data)) :
-                                foreach ($areas_response->data as $area) :
-                            ?>
-                                <option value="<?php echo esc_attr($area->id); ?>" <?php selected($existing_area, $area->id); ?>>
-                                    <?php echo esc_html($area->name); ?>
-                                </option>
-                            <?php
-                                endforeach;
-                            endif;
-                            ?>
-                        <?php endif; ?>
-                    </select>
-                </td>
-
-                <td>
-                    <textarea name="orders[<?php echo esc_attr($order_id); ?>][recipient_address]"
-                              rows="2"
-                              class="large-text"
-                              required><?php echo esc_textarea($recipient_address); ?></textarea>
-                </td>
-
-                <td>
-                    <select name="orders[<?php echo esc_attr($order_id); ?>][delivery_type]"
-                            class="regular-text"
-                            title="48 = Normal Delivery, 12 = On Demand Delivery">
-                        <option value="48" <?php selected(48, 48); ?>>Normal (48h)</option>
-                        <option value="12" <?php selected(12, 48, false); ?>>Express (12h)</option>
-                    </select>
-                    <small>48 = Normal, 12 = Express</small>
-                </td>
-
-                <td>
-                    <select name="orders[<?php echo esc_attr($order_id); ?>][item_type]"
-                            class="regular-text"
-                            title="1 = Document, 2 = Parcel">
-                        <option value="2" <?php selected(2, 2); ?>>Parcel</option>
-                        <option value="1" <?php selected(1, 2, false); ?>>Document</option>
-                    </select>
-                    <small>1 = Document, 2 = Parcel</small>
-                </td>
-
-                <td>
-                    <div class="field-group">
-                        <input type="number" 
-                               name="orders[<?php echo esc_attr($order_id); ?>][item_weight]"
-                               value="<?php echo esc_attr($item_weight); ?>"
-                               step="0.01"
-                               min="0.5"
-                               max="10"
-                               placeholder="0.5"
-                               class="small-text"
-                               title="Weight in kg (0.5 - 10 kg)"
-                               required>
-                        <small>Weight (kg)</small>
-                    </div>
-                    <div class="field-group">
-                        <input type="number" 
-                               name="orders[<?php echo esc_attr($order_id); ?>][item_quantity]"
-                               value="<?php echo esc_attr($item_quantity); ?>"
-                               min="1"
-                               placeholder="1"
-                               class="small-text"
-                               title="Quantity of parcels"
-                               required>
-                        <small>Quantity</small>
-                    </div>
-                </td>
-
-                <td>
-                    <div class="field-group">
-                        <input type="number" 
-                               name="orders[<?php echo esc_attr($order_id); ?>][amount_to_collect]"
-                               value="<?php echo esc_attr($amount_to_collect); ?>"
-                               step="0.01"
-                               min="0"
-                               placeholder="0"
-                               class="small-text"
-                               title="COD amount (0 for prepaid orders)"
-                               required>
-                        <small>COD Amount</small>
-                    </div>
-                    <div class="field-group">
-                        <textarea name="orders[<?php echo esc_attr($order_id); ?>][special_instruction]"
-                                  placeholder="Any special instruction (optional)"
-                                  rows="2"
-                                  class="large-text"
-                                  title="Special instructions for delivery"></textarea>
-                        <small>Special Instruction</small>
-                    </div>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-        <?php
-        wp_send_json_success([
-            'html' => ob_get_clean()
-        ]);
+     public function get_bulk_orders_data()
+{
+    if (! current_user_can('manage_woocommerce')) {
+        wp_send_json_error(['message' => 'Permission denied'], 403);
     }
+
+    check_ajax_referer('pathao_nonce', 'nonce');
+
+    $order_ids = isset($_POST['order_ids'])
+        ? array_map('absint', (array) $_POST['order_ids'])
+        : [];
+
+    if (empty($order_ids)) {
+        wp_send_json_error(['message' => 'No orders selected']);
+    }
+
+    // Load cities once
+    $api = new \ConversLabs\Pathao\Services\PathaoApiService();
+    $cities_res = $api->get_cities();
+    $cities = (!empty($cities_res->success) && !empty($cities_res->data))
+        ? $cities_res->data
+        : [];
+
+    ob_start();
+
+    foreach ($order_ids as $order_id) :
+        $order = wc_get_order($order_id);
+        if (! $order) {
+            continue;
+        }
+
+        $existing_city   = $order->get_meta('_pathao_city');
+        $existing_zone   = $order->get_meta('_pathao_zone');
+        $existing_area   = $order->get_meta('_pathao_area');
+        $existing_weight = $order->get_meta('_pathao_weight');
+
+        $recipient_name = $order->get_formatted_shipping_full_name()
+            ?: trim($order->get_billing_first_name() . ' ' . $order->get_billing_last_name());
+
+        $recipient_phone   = $order->get_billing_phone();
+        $recipient_address = $order->get_shipping_address_1() ?: $order->get_billing_address_1();
+        $item_quantity     = $order->get_item_count();
+        $item_weight       = $existing_weight ?: 0.5;
+        $amount_to_collect = $order->is_paid() ? 0 : $order->get_total();
+
+        $is_sent = ! empty($order->get_meta('_pathao_consignment_id'));
+        ?>
+
+        <tr data-order-id="<?php echo esc_attr($order_id); ?>" <?php echo $is_sent ? 'style="opacity:.6"' : ''; ?>>
+
+            <!-- Order -->
+            <td>
+                #<?php echo esc_html($order_id); ?>
+                <input type="hidden" name="orders[<?php echo $order_id; ?>][order_id]" value="<?php echo $order_id; ?>">
+                <?php if ($is_sent) : ?>
+                    <br><small style="color:orange;">Already sent</small>
+                <?php endif; ?>
+            </td>
+
+            <!-- Name -->
+            <td>
+                <input type="text" name="orders[<?php echo $order_id; ?>][recipient_name]"
+                       value="<?php echo esc_attr($recipient_name); ?>" required>
+            </td>
+
+            <!-- Phone -->
+            <td>
+                <input type="text" name="orders[<?php echo $order_id; ?>][recipient_phone]"
+                       value="<?php echo esc_attr($recipient_phone); ?>" required>
+            </td>
+
+            <!-- City -->
+            <td>
+                <select name="orders[<?php echo $order_id; ?>][recipient_city]"
+                        class="pathao-bulk-city"
+                        data-selected-city="<?php echo esc_attr($existing_city); ?>" required>
+                    <option value="">City</option>
+                    <?php foreach ($cities as $city) : ?>
+                        <option value="<?php echo esc_attr($city->id); ?>" <?php selected($existing_city, $city->id); ?>>
+                            <?php echo esc_html($city->name); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </td>
+
+            <!-- Zone -->
+            <td>
+                <select name="orders[<?php echo $order_id; ?>][recipient_zone]"
+                        class="pathao-bulk-zone"
+                        data-order-id="<?php echo $order_id; ?>"
+                        data-selected-zone="<?php echo esc_attr($existing_zone); ?>" required>
+                    <option value="">Zone</option>
+                </select>
+            </td>
+
+            <!-- Area -->
+            <td>
+                <select name="orders[<?php echo $order_id; ?>][recipient_area]"
+                        class="pathao-bulk-area"
+                        data-order-id="<?php echo $order_id; ?>"
+                        data-selected-area="<?php echo esc_attr($existing_area); ?>">
+                    <option value="">Area</option>
+                </select>
+            </td>
+
+            <!-- Address -->
+            <td>
+                <textarea name="orders[<?php echo $order_id; ?>][recipient_address]"
+                          rows="2" required><?php echo esc_textarea($recipient_address); ?></textarea>
+            </td>
+
+            <!-- Delivery -->
+            <td>
+                <select name="orders[<?php echo $order_id; ?>][delivery_type]">
+                    <option value="48">Normal</option>
+                    <option value="12">Express</option>
+                </select>
+            </td>
+
+            <!-- Item Type -->
+            <td>
+                <select name="orders[<?php echo $order_id; ?>][item_type]">
+                    <option value="2">Parcel</option>
+                    <option value="1">Document</option>
+                </select>
+            </td>
+
+            <!-- Weight -->
+            <td>
+                <input type="number" name="orders[<?php echo $order_id; ?>][item_weight]"
+                       value="<?php echo esc_attr($item_weight); ?>" step="0.01" min="0.5" required>
+            </td>
+
+            <!-- Qty -->
+            <td>
+                <input type="number" name="orders[<?php echo $order_id; ?>][item_quantity]"
+                       value="<?php echo esc_attr($item_quantity); ?>" min="1" required>
+            </td>
+
+            <!-- COD -->
+            <td>
+                <input type="number" name="orders[<?php echo $order_id; ?>][amount_to_collect]"
+                       value="<?php echo esc_attr($amount_to_collect); ?>" step="0.01" min="0" required>
+            </td>
+
+            <!-- Instruction -->
+            <td>
+                <textarea name="orders[<?php echo $order_id; ?>][special_instruction]" rows="2"></textarea>
+            </td>
+
+        </tr>
+
+    <?php endforeach;
+
+    wp_send_json_success([
+        'html' => ob_get_clean()
+    ]);
+}
+
 
 
 

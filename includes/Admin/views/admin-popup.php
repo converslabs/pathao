@@ -170,8 +170,10 @@
                             <th style="width:150px;">Address</th>
                             <th style="width:100px;">Delivery</th>
                             <th style="width:100px;">Item Type</th>
-                            <th style="width:100px;">Weight/Qty</th>
-                            <th style="width:150px;">COD/Instruction</th>
+                            <th style="width:100px;">Weight</th>
+                            <th style="width:100px;">Qty</th>
+                            <th style="width:150px;">COD</th>
+                            <th style="width:150px;">Instruction</th>
                         </tr>
                     </thead>
                     <tbody id="pathao-bulk-rows">
