@@ -31,24 +31,35 @@ jQuery(document).ready(function ($) {
 
     // City, Zone, and Area data is missing. Please preload it to continue.
     /* ---------------- ORDER INFO ---------------- */
-    function loadOrderData(orderId) {
-        $.post(AJAX_URL, {
-            action: "get_wc_order_info",
-            order_id: orderId
-        }, function (res) {
-            $("#ptc-name").val(res.name);
-            $("#ptc-phone").val(res.phone);
-            $("#ptc-address").val(res.address);
-            $("#ptc-weight").val(res.weight);
-            $("#ptc-quantity").val(res.quantity);
-            $("#ptc-total-price").val(res.total);
-            $("#ptc-payment-status").val(res.payment_status);
-            renderOrderItems(res.items);
-            $("#ptc-order-number").val(orderId);
-            $("#ptc-collectable").val(res.cod_amount);
-            $("#ptc-store").val(res.store_name);
-        });
-    }
+     function loadOrderData(orderId) {
+            $.post(AJAX_URL, {
+                action: "get_wc_order_info",
+                order_id: orderId,
+                nonce: NONCE
+            }, function (res) {
+
+                if (!res || !res.success) {
+                    console.error("Order info error:", res);
+                    return;
+                }
+
+                const data = res.data;
+
+                $("#ptc-name").val(data.name);
+                $("#ptc-phone").val(data.phone);
+                $("#ptc-address").val(data.address);
+                $("#ptc-weight").val(data.weight);
+                $("#ptc-quantity").val(data.quantity);
+                $("#ptc-total-price").val(data.total);
+                $("#ptc-payment-status").val(data.payment_status);
+                $("#ptc-order-number").val(orderId);
+                $("#ptc-collectable").val(data.cod_amount);
+                $("#ptc-store").val(data.store_name);
+
+                renderOrderItems(data.items);
+            });
+        }
+
     
     function renderOrderItems(items) {
     const $container = $("#ptc-order-items");

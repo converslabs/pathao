@@ -85,12 +85,7 @@
           <textarea id="ptc-address" name="recipient_address"></textarea>
         </div>
 
-        <div class="ptc-grid">
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Store', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-store" name="store">
-          </div>
-
+        <div class="ptc-grid">  
           <div class="ptc-field">
             <label><?php esc_html_e( 'City', 'integration-of-pathao-for-woocommerce' ); ?></label>
             <select id="ptc-city"  name="recipient_city"></select>

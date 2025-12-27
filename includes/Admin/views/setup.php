@@ -15,11 +15,7 @@
                 </svg>
        <h1><?php esc_html_e( 'Pathao Logistics', 'integration-of-pathao-for-woocommerce' ); ?></h1>
  
-			</div>
-  
-            <span class="status-indicator <?php echo get_option('pathao_access_token') ? 'active' : ''; ?>">
-                <?php echo get_option('pathao_access_token') ? esc_html__('Connected', 'integration-of-pathao-for-woocommerce') : esc_html__('Setup Required', 'integration-of-pathao-for-woocommerce'); ?>
-            </span>
+			</div> 
         </div>
         	 <?php settings_errors(); ?> 
 	<div class="pathao-notice"></div>

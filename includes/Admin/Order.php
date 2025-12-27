@@ -100,68 +100,86 @@
                 }
             }
 
-            public function pathao_orders_menu_content()
-            {
+           public function pathao_orders_menu_content() {
+                // Basic security check: Ensure user has permission
+                if ( ! current_user_can( 'manage_woocommerce' ) ) {
+                    return;
+                }
+
+                // Get filter values safely
+                $search_val = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+                $from_date  = isset( $_GET['from_date'] ) ? sanitize_text_field( wp_unslash( $_GET['from_date'] ) ) : '';
+                $to_date    = isset( $_GET['to_date'] ) ? sanitize_text_field( wp_unslash( $_GET['to_date'] ) ) : '';
+                $per_page   = isset( $_GET['per_page'] ) ? absint( $_GET['per_page'] ) : 20;
                 ?>
-                <div class="wrap">
-                    <h1 class="wp-heading-inline"><?php esc_html_e( 'Pathao Courier Order Page', 'integration-of-pathao-for-woocommerce' ); ?></h1>
-                    <p class="description"><?php esc_html_e( 'Manage your deliveries without any distraction', 'integration-of-pathao-for-woocommerce' ); ?></p>
+                <div class="wrap pathao-order-page">
+                    <h1 class="wp-heading-inline">
+                        <?php echo esc_html__( 'Pathao Courier Order Page', 'integration-of-pathao-for-woocommerce' ); ?>
+                    </h1>
+                    <p class="description">
+                        <?php echo esc_html__( 'Manage your deliveries without any distraction', 'integration-of-pathao-for-woocommerce' ); ?>
+                    </p>
                     <hr class="wp-header-end">
 
-                    <form method="get" style="margin: 20px 0;">
+                    <form method="get" class="pathao-filter-form">
                         <input type="hidden" name="page" value="pathao-orders-menu-slug">
 
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'Search orders:', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <input type="search" name="s" placeholder="Order ID, Customer, Pathao ID" value="<?php echo esc_attr($_GET['s'] ?? ''); ?>">
-                        </label>
+                        <div class="pathao-filter-row">
+                            <label class="pathao-filter-item">
+                                <span><?php echo esc_html__( 'Search orders:', 'integration-of-pathao-for-woocommerce' ); ?></span>
+                                <input type="search" name="s" placeholder="<?php echo esc_attr__( 'Consignment ID', 'integration-of-pathao-for-woocommerce' ); ?>" value="<?php echo esc_attr( $search_val ); ?>">
+                            </label>
 
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'From Date', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <input type="date" name="from_date" value="<?php echo esc_attr($_GET['from_date'] ?? ''); ?>">
-                        </label>_wc_settings
+                            <label class="pathao-filter-item">
+                                <span><?php echo esc_html__( 'From Date', 'integration-of-pathao-for-woocommerce' ); ?></span>
+                                <input type="date" name="from_date" value="<?php echo esc_attr( $from_date ); ?>">
+                            </label>
 
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'To Date', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <input type="date" name="to_date" value="<?php echo esc_attr($_GET['to_date'] ?? ''); ?>">
-                        </label>
+                            <label class="pathao-filter-item">
+                                <span><?php echo esc_html__( 'To Date', 'integration-of-pathao-for-woocommerce' ); ?></span>
+                                <input type="date" name="to_date" value="<?php echo esc_attr( $to_date ); ?>">
+                            </label>
 
-                        <label style="margin-right:10px;">
-                            <?php esc_html_e( 'Items Per Page', 'integration-of-pathao-for-woocommerce' ); ?>
-                            <select name="per_page">
-                                <?php
-                                $per_page = $_GET['per_page'] ?? 20;
-                                foreach ([10, 20, 50] as $count) {
-                                    printf(
-                                        '<option value="%d" %s>%d items</option>',
-                                        $count,
-                                        selected($per_page, $count, false),
-                                        $count
-                                    );
-                                }
-                                ?>
-                            </select>
-                        </label>
-                    <button class="button">
-                        <?php esc_html_e( 'Filter', 'integration-of-pathao-for-woocommerce' ); ?>
-                    </button> 
+                            <label class="pathao-filter-item">
+                                <span><?php echo esc_html__( 'Items Per Page', 'integration-of-pathao-for-woocommerce' ); ?></span>
+                                <select name="per_page">
+                                    <?php
+                                    foreach ( [10, 20, 50, 100] as $count ) {
+                                        printf(
+                                            '<option value="%1$d" %2$s>%1$d %3$s</option>',
+                                            $count,
+                                            selected( $per_page, $count, false ),
+                                            esc_html__( 'items', 'integration-of-pathao-for-woocommerce' )
+                                        );
+                                    }
+                                    ?>
+                                </select>
+                            </label>
+
+                            <button type="submit" class="button">
+                                <?php echo esc_html__( 'Filter', 'integration-of-pathao-for-woocommerce' ); ?>
+                            </button> 
+                        </div>
                     </form>
 
-                    <?php $this->render_pathao_orders_table(); ?>
+                    <div class="pathao-table-container">
+                        <?php $this->render_pathao_orders_table(); ?>
+                    </div>
+
+                    <div class="pathao-action-bar">
+                        <button id="pathao-bulk-send" class="button button-primary"> 
+                            <?php echo esc_html__( 'Send Selected Orders to Pathao', 'integration-of-pathao-for-woocommerce' ); ?>
+                        </button>
+
+                        <button id="pathao-sync-status" class="button pathao-sync-btn">
+                            <span class="dashicons dashicons-update"></span>
+                            <?php echo esc_html__( 'Sync Order Status', 'integration-of-pathao-for-woocommerce' ); ?>
+                        </button>
+                    </div>
                 </div>
-                <button  id="pathao-bulk-send" class="button button-primary"  style="margin: 10px 0;" > 
-                    <?php esc_html_e( 'Send Selected Orders to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </button>
-
-                    <button id="pathao-sync-status"
-                        class="button"
-                        style="margin:10px 0 0 10px;">
-                    🔄 Sync Order Status
-                </button>
-
-
                 <?php
             }
-
+            
             private function render_pathao_orders_table()
             {
                 $per_page = absint($_GET['per_page'] ?? 20);
@@ -172,16 +190,41 @@
                     'order' => 'DESC',
                 ];
 
-                if (!empty($_GET['s'])) {
-                    $args['search'] = sanitize_text_field($_GET['s']);
+                if ( ! empty( $_GET['s'] ) ) {
+
+                $search = sanitize_text_field( $_GET['s'] );
+ 
+                    if ( is_numeric( $search ) ) {
+                        $args['include'] = [ (int) $search ];
+                    } else {
+
+                        $args['meta_query'] = [
+                            'relation' => 'OR',
+                            [
+                                'key'     => '_pathao_consignment_id',
+                                'value'   => $search,
+                                'compare' => 'LIKE',
+                            ], 
+                        ];
                 }
+            }
+
+
 
                 if ( ! empty( $_GET['from_date'] ) && ! empty( $_GET['to_date'] ) ) {
 
                     $from = sanitize_text_field( $_GET['from_date'] );
                     $to   = sanitize_text_field( $_GET['to_date'] );
 
-                    $args['date_created'] = $from . '...' . $to;
+                     if (!empty($_GET['from_date']) && !empty($_GET['to_date'])) {
+                        $args['date_created'] = $from . '...' . $to;
+                    } elseif (!empty($_GET['from_date'])) {
+                        $args['date_created'] = '>=' . $from;
+                    } elseif (!empty($_GET['to_date'])) {
+                        $args['date_created'] = '<=' . $to;
+                    }
+
+
 
                 } elseif ( ! empty( $_GET['from_date'] ) ) {
 
@@ -254,7 +297,12 @@
                                     if ( ! empty( $consignment_id ) ) {
 
                                         // Pathao order URL
-                                        $url = 'https://merchant.pathao.com/courier/orders/' . urlencode( $consignment_id );
+                                        $base = get_option('pathao_sandbox_mode')
+                                            ? 'https://merchant.pathao.com/courier/orders/'
+                                            : 'https://merchant.pathao.com/courier/orders/';
+
+                                        $url = $base . urlencode($consignment_id);
+
 
                                         echo sprintf(
                                             '<a href="%s" class="order-view" target="_blank">%s</a>',
@@ -369,8 +417,13 @@
                     );
 
                     if ( ! empty( $consignment_id ) ) {
+ 
+                        $base = get_option('pathao_sandbox_mode')
+                            ? 'https://merchant.pathao.com/courier/orders/'
+                            : 'https://merchant.pathao.com/courier/orders/';
 
-                        $url = 'https://merchant.pathao.com/courier/orders/' . urlencode( $consignment_id );
+                        $url = $base . urlencode($consignment_id);
+
 
                         echo sprintf(
                             '<a href="%s" class="order-view" target="_blank">%s</a>',
