@@ -124,12 +124,7 @@
             </select>
           </div>
         </div>
-
-        <div class="ptc-field">
-          <label><?php esc_html_e( 'Note', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <textarea id="ptc-note"  name="note"></textarea>
-        </div>
-
+ 
         <div class="ptc-field">
           <label><?php esc_html_e( 'Special Instruction', 'integration-of-pathao-for-woocommerce' ); ?></label>
           <textarea id="ptc-instruction" name="special_instruction"></textarea>
