@@ -1,315 +1,165 @@
 <div id="ptc-modal" class="ptc-modal" style="display:none;">
-  <div class="ptc-modal-content">
-
-    <div class="ptc-header">
-      <h2> <?php esc_html_e( 'x Send Order to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </h2>
-      <img src=" " alt="Shop Logo">
-    </div>
-
-    <form id="ptc-pathao-form">
-
-      <!-- Order Information -->
-      <div class="ptc-section">
-        <h3><?php esc_html_e( 'Order Information', 'integration-of-pathao-for-woocommerce' ); ?> </h3>
-
-        <div class="ptc-grid">
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Total Price', 'integration-of-pathao-for-woocommerce' ); ?></label>
-           <input type="text" id="ptc-total-price" name="total_price" readonly>
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Payment Status', 'integration-of-pathao-for-woocommerce' ); ?></label>
-           <input type="text" id="ptc-payment-status" name="payment_status" readonly>
-          </div>
+    <div class="ptc-modal-content">
+        <div class="ptc-header">
+            <h2><?php esc_html_e( 'Send Order to Pathao', 'integration-of-pathao-for-woocommerce' ); ?></h2>
+            <div class="ptc-logo-container">
+                <img src="<?php echo esc_url( plugins_url( 'assets/images/pathao-logo.png', __FILE__ ) ); ?>" alt="Pathao Logo">
+            </div>
         </div>
 
-        <div class="ptc-field">
-          <label><?php esc_html_e( 'Order Items', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <div id="ptc-order-items"></div>
-        </div>
-      </div>
-
-      <!-- Customer Details -->
-      <div class="ptc-section">
-        <h3>Customer Information</h3>
-
-        <div class="ptc-grid">
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Name', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-name"  name="recipient_name">
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Phone', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-phone" name="recipient_phone">
-          </div>
-        </div>
-
-        <div class="ptc-grid">
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Secondary Phone', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-secondary-phone">
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Order Number', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="text" id="ptc-order-number" name="order_number" readonly>
-          </div>
-        </div>
-      </div>
-
-      <!-- Delivery Details -->
-      <div class="ptc-section">
-        <h3><?php esc_html_e( 'Delivery Details', 'integration-of-pathao-for-woocommerce' ); ?></h3>
-
-        <div class="ptc-grid">
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Collectable Amount', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="number" id="ptc-collectable" name="amount_to_collect" readonly>
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Weight (kg)', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="number" id="ptc-weight" step="0.01" name="item_weight">
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Quantity', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <input type="number" id="ptc-quantity" name="item_quantity">
-          </div>
-        </div>
-
-        <div class="ptc-field">
-          <label><?php esc_html_e( 'Full Address', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <textarea id="ptc-address" name="recipient_address"></textarea>
-        </div>
-
-        <div class="ptc-grid">  
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'City', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-city"  name="recipient_city"></select>
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Zone', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-zone"  name="recipient_zone"></select>
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Area', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-area" name="recipient_area"></select>
-          </div>
-        </div>
-
-        <div class="ptc-grid">
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Delivery Type', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-delivery-type" name="delivery_type">
-              <option value="48"><?php esc_html_e( 'Normal Delivery', 'integration-of-pathao-for-woocommerce' ); ?></option>
-              <option value="12"><?php esc_html_e( 'Express Delivery', 'integration-of-pathao-for-woocommerce' ); ?></option>
-            </select>
-          </div>
-
-          <div class="ptc-field">
-            <label><?php esc_html_e( 'Item Type', 'integration-of-pathao-for-woocommerce' ); ?></label>
-            <select id="ptc-item-type"  name="item_type">
-              <option value="2"><?php esc_html_e( 'Parcel', 'integration-of-pathao-for-woocommerce' ); ?></option>
-              <option value="1"><?php esc_html_e( 'Document', 'integration-of-pathao-for-woocommerce' ); ?></option>
-            </select>
-          </div>
-        </div>
- 
-        <div class="ptc-field">
-          <label><?php esc_html_e( 'Special Instruction', 'integration-of-pathao-for-woocommerce' ); ?></label>
-          <textarea id="ptc-instruction" name="special_instruction"></textarea>
-        </div>
-      </div>
-
-      <!-- Footer Buttons -->
-      <div class="ptc-footer">
-        <button type="button" id="ptc-send-confirm" class="ptc-btn-primary"><?php esc_html_e( 'Send to Pathao', 'integration-of-pathao-for-woocommerce' ); ?></button>
-        <button type="button" id="ptc-send-cancel" class="ptc-btn-secondary"><?php esc_html_e( 'Cancel', 'integration-of-pathao-for-woocommerce' ); ?></button>
-      </div>
-
-    </form>
-  </div>
-</div>
-
-
-<!--==================== Bulk Order Modal ===================== -->
-<div id="pathao-bulk-modal" class="pathao-bulk-modal" style="display:none;">
-    <div class="pathao-bulk-overlay"></div>
-    <div class="pathao-bulk-content" style="background:#fff;padding:20px;max-width:95%;max-height:90vh;overflow:auto;position:relative;margin:2% auto;border:1px solid #ccc;border-radius:4px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #ddd;padding-bottom:15px;">
-            <h2 style="margin:0;">Send Selected Orders to Pathao</h2>
-            <button type="button" class="pathao-bulk-close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">&times;</button>
-        </div>
-
-        <form id="pathao-bulk-form">
-            <div style="overflow-x:auto;">
-                <table class="widefat fixed striped" style="table-layout:auto;">
-                    <thead>
-                        <tr>
-                            <th style="width:80px;">Order</th>
-                            <th style="width:120px;">Name</th>
-                            <th style="width:130px;">Phone</th>
-                            <th style="width:120px;">City</th>
-                            <th style="width:120px;">Zone</th>
-                            <th style="width:120px;">Area</th>
-                            <th style="width:150px;">Address</th>
-                            <th style="width:100px;">Delivery</th>
-                            <th style="width:100px;">Item Type</th>
-                            <th style="width:100px;">Weight</th>
-                            <th style="width:100px;">Qty</th>
-                            <th style="width:150px;">COD</th>
-                            <th style="width:150px;">Instruction</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pathao-bulk-rows">
-                        <!-- Rows loaded via AJAX -->
-                    </tbody>
-                </table>
+        <form id="ptc-pathao-form">
+            <div class="ptc-section">
+                <h3 class="ptc-section-title"><?php esc_html_e( 'Order Information', 'integration-of-pathao-for-woocommerce' ); ?></h3>
+                <div class="ptc-grid ptc-grid-2">
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Total Price', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <input type="text" id="ptc-total-price" name="total_price" readonly class="ptc-input-readonly">
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Payment Status', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <input type="text" id="ptc-payment-status" name="payment_status" readonly class="ptc-input-readonly">
+                    </div>
+                </div>
+                <div class="ptc-field">
+                    <label><?php esc_html_e( 'Order Items', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                    <div id="ptc-order-items" class="ptc-items-list"></div>
+                </div>
             </div>
 
-            <p style="margin-top:20px;text-align:right;">
-                <button type="button" class="button pathao-bulk-close" style="margin-right:10px;">Cancel</button>
-                <button type="submit" class="button button-primary">
-                    Send Selected Orders to Pathao
-                </button>
-            </p>
+            <div class="ptc-section">
+                <h3 class="ptc-section-title"><?php esc_html_e( 'Customer Information', 'integration-of-pathao-for-woocommerce' ); ?></h3>
+                <div class="ptc-grid ptc-grid-2">
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Name', 'integration-of-pathao-for-woocommerce' ); ?> <span class="ptc-required">*</span></label>
+                        <input type="text" id="ptc-name" name="recipient_name" required>
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Phone', 'integration-of-pathao-for-woocommerce' ); ?> <span class="ptc-required">*</span></label>
+                        <input type="text" id="ptc-phone" name="recipient_phone" required>
+                    </div>
+                </div>
+                <div class="ptc-grid ptc-grid-2">
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Secondary Phone', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <input type="text" id="ptc-secondary-phone">
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Order Number', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <input type="text" id="ptc-order-number" name="order_number" readonly class="ptc-input-readonly">
+                    </div>
+                </div>
+            </div>
+
+            <div class="ptc-section">
+                <h3 class="ptc-section-title"><?php esc_html_e( 'Delivery Details', 'integration-of-pathao-for-woocommerce' ); ?></h3>
+                <div class="ptc-grid ptc-grid-3">
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Collectable Amount', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <input type="number" id="ptc-collectable" name="amount_to_collect" readonly class="ptc-input-readonly">
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Weight (kg)', 'integration-of-pathao-for-woocommerce' ); ?> <span class="ptc-required">*</span></label>
+                        <input type="number" id="ptc-weight" step="0.01" name="item_weight" required>
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Quantity', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <input type="number" id="ptc-quantity" name="item_quantity">
+                    </div>
+                </div>
+
+                <div class="ptc-field">
+                    <label><?php esc_html_e( 'Full Address', 'integration-of-pathao-for-woocommerce' ); ?> <span class="ptc-required">*</span></label>
+                    <textarea id="ptc-address" name="recipient_address" rows="2" required></textarea>
+                </div>
+
+                <div class="ptc-grid ptc-grid-3">  
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'City', 'integration-of-pathao-for-woocommerce' ); ?> <span class="ptc-required">*</span></label>
+                        <select id="ptc-city" name="recipient_city" required></select>
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Zone', 'integration-of-pathao-for-woocommerce' ); ?> <span class="ptc-required">*</span></label>
+                        <select id="ptc-zone" name="recipient_zone" required></select>
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Area', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <select id="ptc-area" name="recipient_area"></select>
+                    </div>
+                </div>
+
+                <div class="ptc-grid ptc-grid-2">
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Delivery Type', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <select id="ptc-delivery-type" name="delivery_type">
+                            <option value="48"><?php esc_html_e( 'Normal Delivery', 'integration-of-pathao-for-woocommerce' ); ?></option>
+                            <option value="12"><?php esc_html_e( 'Express Delivery', 'integration-of-pathao-for-woocommerce' ); ?></option>
+                        </select>
+                    </div>
+                    <div class="ptc-field">
+                        <label><?php esc_html_e( 'Item Type', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                        <select id="ptc-item-type" name="item_type">
+                            <option value="2"><?php esc_html_e( 'Parcel', 'integration-of-pathao-for-woocommerce' ); ?></option>
+                            <option value="1"><?php esc_html_e( 'Document', 'integration-of-pathao-for-woocommerce' ); ?></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="ptc-field">
+                    <label><?php esc_html_e( 'Special Instruction', 'integration-of-pathao-for-woocommerce' ); ?></label>
+                    <textarea id="ptc-instruction" name="special_instruction" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="ptc-footer">
+                <button type="button" id="ptc-send-cancel" class="ptc-btn-secondary"><?php esc_html_e( 'Cancel', 'integration-of-pathao-for-woocommerce' ); ?></button>
+                <button type="button" id="ptc-send-confirm" class="ptc-btn-primary"><?php esc_html_e( 'Send to Pathao', 'integration-of-pathao-for-woocommerce' ); ?></button>
+            </div>
         </form>
     </div>
 </div>
 
-<style>
-.pathao-bulk-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 100000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
-.pathao-bulk-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 100001;
-}
+<div id="pathao-bulk-modal" class="pathao-bulk-modal" style="display:none;">
+    <div class="pathao-bulk-overlay"></div>
+    <div class="pathao-bulk-content">
+        <div class="pathao-bulk-header">
+            <h2><?php esc_html_e( 'Bulk Send Orders to Pathao', 'integration-of-pathao-for-woocommerce' ); ?></h2>
+            <button type="button" class="pathao-bulk-close">&times;</button>
+        </div>
 
-.pathao-bulk-content {
-    position: relative;
-    z-index: 100002;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    background: #fff;
-    border-radius: 4px;
-}
+        <form id="pathao-bulk-form">
+            <div class="pathao-table-container">
+                <table class="widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th class="col-order"><?php esc_html_e( 'Order', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-name"><?php esc_html_e( 'Name', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-phone"><?php esc_html_e( 'Phone', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-loc"><?php esc_html_e( 'City', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-loc"><?php esc_html_e( 'Zone', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-zone"><?php esc_html_e( 'Area', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-addr"><?php esc_html_e( 'Address', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-type"><?php esc_html_e( 'Type', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-wi"><?php esc_html_e( 'Wt', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-qty"><?php esc_html_e( 'Qty', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-cod"><?php esc_html_e( 'COD', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                            <th class="col-instr"><?php esc_html_e( 'Instruction', 'integration-of-pathao-for-woocommerce' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="pathao-bulk-rows">
+                        </tbody>
+                </table>
+            </div>
 
-.pathao-bulk-content table {
-    border-collapse: collapse;
-}
-
-.pathao-bulk-content table th {
-    background: #f5f5f5;
-    font-weight: 600;
-    border-bottom: 2px solid #ddd;
-    padding: 12px 8px;
-    text-align: left;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.pathao-bulk-content table td {
-    padding: 10px 8px;
-    vertical-align: top;
-    border-bottom: 1px solid #eee;
-}
-
-.pathao-bulk-content table tbody tr:hover {
-    background: #f9f9f9;
-}
-
-.pathao-bulk-content table tbody tr[style*="opacity"] {
-    background: #fff8e1;
-}
-
-.pathao-bulk-content input[type="text"],
-.pathao-bulk-content input[type="number"],
-.pathao-bulk-content select,
-.pathao-bulk-content textarea {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 6px 8px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 13px;
-}
-
-.pathao-bulk-content input[type="text"]:focus,
-.pathao-bulk-content input[type="number"]:focus,
-.pathao-bulk-content select:focus,
-.pathao-bulk-content textarea:focus {
-    border-color: #2271b1;
-    outline: none;
-    box-shadow: 0 0 0 1px #2271b1;
-}
-
-.pathao-bulk-content input:required,
-.pathao-bulk-content select:required,
-.pathao-bulk-content textarea:required {
-    border-left: 3px solid #d63638;
-}
-
-.pathao-bulk-content select:disabled {
-    background: #f0f0f0;
-    cursor: not-allowed;
-}
-
-.pathao-bulk-content .small-text {
-    width: 80px;
-    min-width: 80px;
-}
-
-.pathao-bulk-content .regular-text {
-    width: 100%;
-    min-width: 120px;
-}
-
-.pathao-bulk-content .large-text {
-    width: 100%;
-    min-width: 150px;
-    resize: vertical;
-}
-
-.pathao-bulk-content label {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 4px;
-    font-size: 12px;
-    color: #555;
-}
-
-.pathao-bulk-content small {
-    display: block;
-    color: #666;
-    font-size: 11px;
-    margin-top: 2px;
-}
-
-.pathao-bulk-content .field-group {
-    margin-bottom: 8px;
-}
-
-.pathao-bulk-content .field-group:last-child {
-    margin-bottom: 0;
-}
-</style>
+            <div class="pathao-bulk-footer">
+                <div class="pathao-bulk-info">
+                    <span id="pathao-bulk-count">0</span> <?php esc_html_e( 'orders selected', 'integration-of-pathao-for-woocommerce' ); ?>
+                </div>
+                <div class="pathao-bulk-buttons">
+                    <button type="button" class="button pathao-bulk-close"><?php esc_html_e( 'Cancel', 'integration-of-pathao-for-woocommerce' ); ?></button>
+                    <button type="submit" class="button button-primary"><?php esc_html_e( 'Send Selected Orders', 'integration-of-pathao-for-woocommerce' ); ?></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

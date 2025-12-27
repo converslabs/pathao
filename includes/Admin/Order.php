@@ -346,32 +346,39 @@
                 }
             }
 
-            public function update_order_info_from_pathao(int $order_id): void
-            {
-                $order = wc_get_order($order_id);
-                if (! $order) return;
+             public function update_order_info_from_pathao(int $order_id): void
+                {
+                    $order = wc_get_order($order_id);
+                    if (! $order) {
+                        return;
+                    }
 
-                $status = $order->get_meta('_pathao_order_status');
+                    $consignment_id = $order->get_meta('_pathao_consignment_id');
+                    if (empty($consignment_id)) {
+                        return;
+                    }
 
-                // Only sync pending orders
-                if ( ! $order->get_meta('_pathao_consignment_id') ) {
-                    return;
-                }if ($status !== 'pending') return;
+                    $api = new PathaoApiService();
+                    $res = $api->get_order_by_merchant_order_id((string) $order_id);
 
-                $api = new PathaoApiService();
-                $res = $api->get_order_by_merchant_order_id((string) $order_id);
+                    if (empty($res->data)) {
+                        return;
+                    }
 
-                if (! empty($res->data)) {
                     $data = $res->data;
 
-                    update_post_meta($order_id, '_pathao_consignment_id', $data->consignment_id ?? '');
-                    update_post_meta($order_id, '_pathao_order_status', $data->order_status ?? '');
+                    if (! empty($data->consignment_id)) {
+                        update_post_meta($order_id, '_pathao_consignment_id', $data->consignment_id);
+                    }
 
-                    if (! empty($data->delivery_fee)) {
+                    if (! empty($data->order_status)) {
+                        update_post_meta($order_id, '_pathao_order_status', $data->order_status);
+                    }
+
+                    if (isset($data->delivery_fee)) {
                         update_post_meta($order_id, '_pathao_delivery_fee', $data->delivery_fee);
                     }
                 }
-            } 
 
             public function load_hpos_hooks()
             {
