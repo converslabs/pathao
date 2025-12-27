@@ -246,19 +246,23 @@ class Ajax
                 'delivery_type'             => (int) $delivery_type,
                 'item_type'                 => (int) $item_type,
                 'item_quantity'             => (int) $quantity,
-                'item_weight'               => number_format((float)$weight, 2, '.', ''), // Strict format 0.50
-                'amount_to_collect'         => (int) $amount_to_collect, // Pathao usually expects Int for COD
+                'item_weight'               => number_format((float)$weight, 2, '.', ''),  
+                'amount_to_collect'         => (int) $amount_to_collect,  
                 'special_instruction'       => (string) $special_instruction,
                 'item_description'          => 'WooCommerce Order #' . $order_id,
             ];
 
-            // Send order individually to Pathao API
             $response = $api->send_order_with_payload($payload);
 
             if (! empty($response->success) && ! empty($response->data->consignment_id)) {
-                // Success - save consignment ID and meta
+
+                $delivery_fee = isset($response->data->delivery_fee)
+                ? (float) $response->data->delivery_fee
+                : 0;
+
                 $order->update_meta_data('_pathao_consignment_id', $response->data->consignment_id);
                 $order->update_meta_data('_pathao_order_status', $response->data->order_status ?? 'pending');
+                $order->update_meta_data('_pathao_delivery_fee', $delivery_fee); 
                 $order->update_meta_data('_pathao_city', $city);
                 $order->update_meta_data('_pathao_zone', $zone);
                 $order->update_meta_data('_pathao_area', $area);
@@ -591,6 +595,11 @@ class Ajax
         if (!empty($res->success) && !empty($res->data->consignment_id)) {
             $order->update_meta_data('_pathao_consignment_id', $res->data->consignment_id);
             $order->update_meta_data('_pathao_order_status', $res->data->order_status ?? 'Pending');
+
+            if (isset($res->data->delivery_fee)) {
+                $order->update_meta_data('_pathao_delivery_fee', (float) $res->data->delivery_fee);
+            }
+
             $order->save();
 
             wp_send_json_success(['message' => 'Order sent to Pathao']);

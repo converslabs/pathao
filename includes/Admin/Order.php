@@ -71,7 +71,6 @@
              */
             public function sync_pending_bulk_orders()
             {
-                // Run ONLY on Pathao Orders page
                 if (
                     ! is_admin() ||
                     ! isset($_GET['page']) ||
@@ -79,8 +78,7 @@
                 ) {
                     return;
                 }
-
-                // Avoid running too frequently (cache for 2 minutes)
+ 
                 if (get_transient('_pathao_bulk_sync_running')) {
                     return;
                 }
@@ -305,7 +303,9 @@
                 $status = $order->get_meta('_pathao_order_status');
 
                 // Only sync pending orders
-                if ($status !== 'pending') return;
+                if ( ! $order->get_meta('_pathao_consignment_id') ) {
+                    return;
+                }if ($status !== 'pending') return;
 
                 $api = new PathaoApiService();
                 $res = $api->get_order_by_merchant_order_id((string) $order_id);
@@ -383,13 +383,11 @@
                     }
 
                     break;
-
-                /** Pathao Status column */
+ 
                 case 'sdevs_pathao_status_column':
                     echo esc_html( $pathao_status ?: '—' );
-                    break;
+                    break; 
 
-                /** Delivery Fee column */
                 case 'sdevs_pathao_fee_column':
                     if ( $delivery_fee === '' ) {
                     echo '—';
@@ -404,8 +402,7 @@
 
             public function store_log_after_creation( $res ) {
                 global $wpdb;
-
-                // Resolve order ID safely
+ 
                 $order_id = 0;
 
                 if ( ! empty( $res->merchant_order_id ) ) {
@@ -415,14 +412,12 @@
                 }
 
                 if ( ! $order_id ) {
-                    // error_log('[Pathao] Order ID missing in response');
                     return;
                 }
 
                 $consignment_id = sanitize_text_field( $res->consignment_id ?? '' );
                 $order_status   = sanitize_text_field( $res->order_status ?? '' );
 
-                // SAVE INTO ORDER META (THIS FIXES BLANK ISSUE)
                 update_post_meta( $order_id, '_pathao_consignment_id', $consignment_id );
                 update_post_meta( $order_id, '_pathao_order_status', $order_status );
 
@@ -430,7 +425,6 @@
                     update_post_meta( $order_id, '_pathao_delivery_fee', $res->delivery_fee );
                 }
 
-                // Optional log table
                 $wpdb->insert(
                     $wpdb->prefix . 'pathao_logs',
                     [
@@ -496,7 +490,7 @@
             {
                 wp_localize_script('pathao_admin_script', 'pathao_admin_obj', [
                     'ajax_url' => admin_url('admin-ajax.php'),
-                    'order_id' => $order->get_id(),   // FIXED — previously undefined
+                    'order_id' => $order->get_id(),  
                 ]);
             }
         }

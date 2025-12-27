@@ -88,12 +88,13 @@ jQuery(document).ready(function ($) {
             const $zone = $('#ptc-zone');
             $zone.empty().append('<option value="">Select Zone</option>');
 
-            if (res.zones) {
-                res.zones.forEach((z) => {
+            if (res.success && res.data && res.data.zones) {
+                res.data.zones.forEach((z) => {
                     $zone.append(`<option value="${z.id}">${z.name}</option>`);
                 });
             }
         });
+
     });
 
     /* ---------------------------------------------------
@@ -105,16 +106,17 @@ jQuery(document).ready(function ($) {
 
         $('#ptc-area').html('<option>Loading…</option>');
 
-        ajaxPost('get_zone_areas', { zone: zoneId }, function (res) {
+         ajaxPost('get_zone_areas', { zone: zoneId }, function (res) {
             const $area = $('#ptc-area');
             $area.empty().append('<option value="">Select Area</option>');
 
-            if (res.areas) {
-                res.areas.forEach((a) => {
+            if (res.success && res.data && res.data.areas) {
+                res.data.areas.forEach((a) => {
                     $area.append(`<option value="${a.id}">${a.name}</option>`);
                 });
             }
         });
+
     });
 
     /* ---------------------------------------------------
