@@ -72,51 +72,73 @@ jQuery(document).ready(function ($) {
 
 
     /* ---------------- CITIES ---------------- */
-    function loadCities(orderId) {
+        function loadCities(orderId) {
         $.post(AJAX_URL, {
             action: "get_cities",
             order_id: orderId,
             nonce: NONCE
         }, function (res) {
-            const $city = $("#ptc-city").empty();
-            res.cities.forEach(city => {
+
+            const $city = $("#ptc-city").empty()
+                .append('<option value="">Select City</option>');
+
+            if (!res || !res.success || !res.data?.cities) {
+                console.error("City API error:", res);
+                return;
+            }
+
+            res.data.cities.forEach(city => {
                 $city.append(`<option value="${city.id}">${city.name}</option>`);
             });
-            $city.trigger("change");
         });
-    }
+         }
 
     /* ---------------- ZONES ---------------- */
-    $("#ptc-city").on("change", function () {
-        $.post(AJAX_URL, {
-            action: "get_city_zones",
-            city: $(this).val(),
-            order_id: $("#ptc-send-confirm").data("order-id"),
-            nonce: NONCE
-        }, function (res) {
-            console.log("This is ",res);
-            const $zone = $("#ptc-zone").empty();
-            res.zones.forEach(zone => {
-                $zone.append(`<option value="${zone.id}">${zone.name}</option>`);
-            });
-            $zone.trigger("change");
+     $("#ptc-city").on("change", function () {
+    $.post(AJAX_URL, {
+        action: "get_city_zones",
+        city: $(this).val(),
+        nonce: NONCE
+    }, function (res) {
+
+        const $zone = $("#ptc-zone")
+            .empty()
+            .append('<option value="">Select Zone</option>');
+
+        if (!res || !res.success || !res.data?.zones) {
+            console.error("Zone error:", res);
+            return;
+        }
+
+        res.data.zones.forEach(zone => {
+            $zone.append(`<option value="${zone.id}">${zone.name}</option>`);
         });
     });
+});
+
 
     /* ---------------- AREAS ---------------- */
-    $("#ptc-zone").on("change", function () {
-        $.post(AJAX_URL, {
-            action: "get_zone_areas",
-            zone: $(this).val(),
-            order_id: $("#ptc-send-confirm").data("order-id"),
-            nonce: NONCE
-        }, function (res) {
-            const $area = $("#ptc-area").empty();
-            res.areas.forEach(area => {
-                $area.append(`<option value="${area.id}">${area.name}</option>`);
-            });
+     $("#ptc-zone").on("change", function () {
+    $.post(AJAX_URL, {
+        action: "get_zone_areas",
+        zone: $(this).val(),
+        nonce: NONCE
+    }, function (res) {
+
+        const $area = $("#ptc-area")
+            .empty()
+            .append('<option value="">Select Area</option>');
+
+        if (!res || !res.success || !res.data?.areas) {
+            console.error("Area error:", res);
+            return;
+        }
+
+        res.data.areas.forEach(area => {
+            $area.append(`<option value="${area.id}">${area.name}</option>`);
         });
     });
+});
 
     /* ---------------- SEND ORDER ---------------- */
         $("#ptc-send-confirm").on("click", function (e) {

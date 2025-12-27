@@ -246,9 +246,21 @@ class PathaoApiService
                 "aladdin/api/v1/zones/{$zone_id}/area-list"
             );
 
-            if ($err = $this->has_errors($res)) return $err;
+            if ($err = $this->has_errors($res)) {
+                return $err;
+            }
 
             $body = json_decode(wp_remote_retrieve_body($res));
+
+            if (
+                empty($body->data->data) ||
+                !is_array($body->data->data)
+            ) {
+                return (object)[
+                    'success' => false,
+                    'messages' => ['Area data malformed']
+                ];
+            }
 
             $list = [];
             foreach ($body->data->data as $a) {

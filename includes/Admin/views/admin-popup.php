@@ -2,7 +2,7 @@
   <div class="ptc-modal-content">
 
     <div class="ptc-header">
-      <h2> <?php esc_html_e( 'Send Order to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </h2>
+      <h2> <?php esc_html_e( 'x Send Order to Pathao', 'integration-of-pathao-for-woocommerce' ); ?> </h2>
       <img src=" " alt="Shop Logo">
     </div>
 
@@ -145,3 +145,179 @@
     </form>
   </div>
 </div>
+
+
+<!--==================== Bulk Order Modal ===================== -->
+<div id="pathao-bulk-modal" class="pathao-bulk-modal" style="display:none;">
+    <div class="pathao-bulk-overlay"></div>
+    <div class="pathao-bulk-content" style="background:#fff;padding:20px;max-width:95%;max-height:90vh;overflow:auto;position:relative;margin:2% auto;border:1px solid #ccc;border-radius:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #ddd;padding-bottom:15px;">
+            <h2 style="margin:0;">Send Selected Orders to Pathao</h2>
+            <button type="button" class="pathao-bulk-close" style="background:none;border:none;font-size:24px;cursor:pointer;color:#666;">&times;</button>
+        </div>
+
+        <form id="pathao-bulk-form">
+            <div style="overflow-x:auto;">
+                <table class="widefat fixed striped" style="table-layout:auto;">
+                    <thead>
+                        <tr>
+                            <th style="width:80px;">Order</th>
+                            <th style="width:120px;">Name</th>
+                            <th style="width:130px;">Phone</th>
+                            <th style="width:120px;">City</th>
+                            <th style="width:120px;">Zone</th>
+                            <th style="width:120px;">Area</th>
+                            <th style="width:150px;">Address</th>
+                            <th style="width:100px;">Delivery</th>
+                            <th style="width:100px;">Item Type</th>
+                            <th style="width:100px;">Weight/Qty</th>
+                            <th style="width:150px;">COD/Instruction</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pathao-bulk-rows">
+                        <!-- Rows loaded via AJAX -->
+                    </tbody>
+                </table>
+            </div>
+
+            <p style="margin-top:20px;text-align:right;">
+                <button type="button" class="button pathao-bulk-close" style="margin-right:10px;">Cancel</button>
+                <button type="submit" class="button button-primary">
+                    Send Selected Orders to Pathao
+                </button>
+            </p>
+        </form>
+    </div>
+</div>
+
+<style>
+.pathao-bulk-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pathao-bulk-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100001;
+}
+
+.pathao-bulk-content {
+    position: relative;
+    z-index: 100002;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    background: #fff;
+    border-radius: 4px;
+}
+
+.pathao-bulk-content table {
+    border-collapse: collapse;
+}
+
+.pathao-bulk-content table th {
+    background: #f5f5f5;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+    padding: 12px 8px;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.pathao-bulk-content table td {
+    padding: 10px 8px;
+    vertical-align: top;
+    border-bottom: 1px solid #eee;
+}
+
+.pathao-bulk-content table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.pathao-bulk-content table tbody tr[style*="opacity"] {
+    background: #fff8e1;
+}
+
+.pathao-bulk-content input[type="text"],
+.pathao-bulk-content input[type="number"],
+.pathao-bulk-content select,
+.pathao-bulk-content textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.pathao-bulk-content input[type="text"]:focus,
+.pathao-bulk-content input[type="number"]:focus,
+.pathao-bulk-content select:focus,
+.pathao-bulk-content textarea:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.pathao-bulk-content input:required,
+.pathao-bulk-content select:required,
+.pathao-bulk-content textarea:required {
+    border-left: 3px solid #d63638;
+}
+
+.pathao-bulk-content select:disabled {
+    background: #f0f0f0;
+    cursor: not-allowed;
+}
+
+.pathao-bulk-content .small-text {
+    width: 80px;
+    min-width: 80px;
+}
+
+.pathao-bulk-content .regular-text {
+    width: 100%;
+    min-width: 120px;
+}
+
+.pathao-bulk-content .large-text {
+    width: 100%;
+    min-width: 150px;
+    resize: vertical;
+}
+
+.pathao-bulk-content label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #555;
+}
+
+.pathao-bulk-content small {
+    display: block;
+    color: #666;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.pathao-bulk-content .field-group {
+    margin-bottom: 8px;
+}
+
+.pathao-bulk-content .field-group:last-child {
+    margin-bottom: 0;
+}
+</style>
