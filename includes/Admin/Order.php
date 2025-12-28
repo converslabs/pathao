@@ -25,11 +25,10 @@
  
 
             } 
+ 
 
-
-         
-
-           public function pathao_orders_menu_content() {
+           public function pathao_orders_menu_content() 
+           {
                 // Basic security check: Ensure user has permission
                 if ( ! current_user_can( 'manage_woocommerce' ) ) {
                     return;
