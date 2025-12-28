@@ -500,7 +500,7 @@ class Ajax
 
         wp_send_json_success( [
             'order_number'   => $order->get_order_number(),
-            'total'          => wc_price( $order->get_total() ),
+            'total'          => number_format((float) $order->get_total(), 2),
             'payment_status' => $payment_status,
             'cod_amount'     => $cod_amount,
             'name'           => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
