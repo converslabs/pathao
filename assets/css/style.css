@@ -179,15 +179,7 @@
 .pathao-table-wrap {
   overflow-x: auto;
 }
-
-/* Close button */
-.pathao-bulk-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-}
+ 
 
 
 /* Container Spacing */

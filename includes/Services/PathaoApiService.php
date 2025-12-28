@@ -678,56 +678,7 @@ class PathaoApiService
         }
 
 
-        /*-----------------------------------------
-        | SEND BULK ORDERS TO PATHAO
-        ------------------------------------------*/
-        public function send_bulk_orders(array $orders): stdClass
-        {
-            if (empty($orders)) {
-                return (object)[
-                    'success' => false,
-                    'messages' => ['No orders provided']
-                ];
-            }
-
-            // Validate each order
-            foreach ($orders as $o) {
-                $check = $this->validate_bulk_order($o);
-                if ($check !== true) {
-                    return (object)[
-                        'success' => false,
-                        'messages' => [$check],
-                    ];
-                }
-            }
-
-            $payload = [
-                'orders' => $orders
-            ];
-
-            error_log('[Pathao Bulk] Payload: ' . wp_json_encode($payload));
-
-            $res = $this->request(
-                'wp_remote_post',
-                'aladdin/api/v1/orders/bulk',
-                [
-                    'body' => wp_json_encode($payload)
-                ]
-            );
-
-            if ($err = $this->has_errors($res)) {
-                return $err;
-            }
-
-            $body = json_decode(wp_remote_retrieve_body($res));
-
-            return (object)[
-                'success' => true,
-                'code'    => $body->code ?? 202,
-                'data'    => true,
-                'message' => $body->message ?? 'Bulk order request accepted',
-            ];
-        }
+      
 
         public function get_order_by_merchant_order_id(string $merchant_order_id): stdClass
         {
@@ -754,40 +705,7 @@ class PathaoApiService
                 'data' => $body->data->data[0]
             ];
         }
-        private function validate_bulk_order(array $o)
-        {
-            $required = [
-                'store_id',
-                'recipient_name',
-                'recipient_phone',
-                'recipient_address',
-                'delivery_type',
-                'item_type',
-                'item_quantity',
-                'item_weight',
-                'amount_to_collect',
-            ];
-
-            foreach ($required as $field) {
-                if (!isset($o[$field]) || $o[$field] === '') {
-                    return "Missing field: {$field}";
-                }
-            }
-
-            if (strlen($o['recipient_phone']) !== 11) {
-                return 'Recipient phone must be 11 digits';
-            }
-
-            if (strlen($o['recipient_address']) < 10) {
-                return 'Recipient address too short';
-            }
-
-            if ($o['item_weight'] < 0.5 || $o['item_weight'] > 10) {
-                return 'Invalid item weight';
-            }
-
-            return true;
-        }
+     
 
 
         /*-----------------------------------------
