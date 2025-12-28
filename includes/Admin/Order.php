@@ -21,87 +21,13 @@
 
                 add_action('init', array($this, 'load_hpos_hooks'));
 
-                add_action('admin_footer', array($this, 'load_pathao_popup_view'));
-
-                add_action('admin_menu', array($this, 'pathao_order_submenu'));
-
-                add_action('admin_init', [$this, 'sync_pending_bulk_orders']);
+                add_action('admin_footer', array($this, 'load_pathao_popup_view'));  
  
 
-            }
- 
+            } 
 
 
-            public function pathao_order_submenu()
-            {
-                add_menu_page(
-                    'Pathao Orders Page Title',
-                    'Pathao Orders',
-                    'manage_options',
-                    'pathao-orders-menu-slug',
-                    array($this, 'pathao_orders_menu_content'),
-                    'dashicons-cart',
-                    22
-                );
-                  add_submenu_page(
-                    'pathao-orders-menu-slug', // Parent slug
-                    'Setup Pathao', // Page title
-                    'Setup Pathao',       // Menu title
-                    'manage_options',          // Capability
-                    'pathao-shipping-settings', // Menu slug
-                    array( $this, 'render_pathao_setup_page' ) // Callback
-                 );
-            }
-
-             public function render_pathao_setup_page()
-                {
-                    if ( ! current_user_can( 'manage_options' ) ) {
-                        return;
-                    }
-
-                    $view = plugin_dir_path( dirname( __DIR__ ) ) . 'includes/Admin/views/setup.php';
-
-                    if ( file_exists( $view ) ) {
-                        include $view;
-                    } else {
-                        echo '<div class="notice notice-error"><p>Setup view file not found.</p></div>';
-                    }
-                }
-
-
-            /**
-             * Sync pending Pathao bulk orders when Pathao Orders page loads
-             */
-            public function sync_pending_bulk_orders()
-            {
-                if (
-                    ! is_admin() ||
-                    ! isset($_GET['page']) ||
-                    $_GET['page'] !== 'pathao-orders-menu-slug'
-                ) {
-                    return;
-                }
- 
-                if (get_transient('_pathao_bulk_sync_running')) {
-                    return;
-                }
-
-                set_transient('_pathao_bulk_sync_running', 1, 2 * MINUTE_IN_SECONDS);
-
-                $orders = wc_get_orders([
-                    'limit'      => 20,
-                    'meta_key'   => '_pathao_order_status',
-                    'meta_value' => 'pending',
-                ]);
-
-                if (empty($orders)) {
-                    return;
-                }
-
-                foreach ($orders as $order) {
-                    $this->update_order_info_from_pathao($order->get_id());
-                }
-            }
+         
 
            public function pathao_orders_menu_content() {
                 // Basic security check: Ensure user has permission
