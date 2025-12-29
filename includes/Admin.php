@@ -2,14 +2,14 @@
 /**
  * The admin class
  *
- * @package SpringDevs\Pathao\Admin
+ * @package ConversLabs\Pathao\Admin
  */
 
-namespace SpringDevs\Pathao;
+namespace ConversLabs\Pathao;
 
-use SpringDevs\Pathao\Admin\Links;
-use SpringDevs\Pathao\Admin\Notice;
-use SpringDevs\Pathao\Admin\Settings;
+use ConversLabs\Pathao\Admin\Links;
+use ConversLabs\Pathao\Admin\Notice;
+use ConversLabs\Pathao\Admin\Settings;
 
 /**
  * The admin class

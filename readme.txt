@@ -1,15 +1,17 @@
 === Pathao Integration for WooCommerce ===
-Contributors: springdevs, naminbd, ok9xnirab
-Donate link: http://springdevs.com/
+Contributors: converswp, shamsbd71
+Donate link: http://converslabs.com/
+https://converslabs.com/products/pathao
 Tags: pathao, pathao-shipping, woocommerce-shipping, pathao courier, bd courier
 Requires at least: 4.0
-Tested up to: 6.6
-Stable tag: trunk
+Tested up to: 6.9
+Stable tag: 1.2
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Pathao courier integration for WooCommerce
+
 
 == Description ==
 
@@ -28,7 +30,7 @@ Here we made a solution that will take all the information from the user and sen
 
 ### Premium
 
-Explore our [Premium Version here](https://springdevs.com/plugin/pathao).
+Explore our [Premium Version here](https://converslabs.com/products/pathao/).
 
 1.  Register Pathao as a shipping method
 2.  Automatically calculate shipping charge based on location
@@ -79,6 +81,17 @@ Sometimes, especially when new versions are released, it might only require some
 4.  Pathao order status
 
 == Changelog ==
+ 
+= version 2.0 =
+* **feature:** implemented Pathao access token generation using password and refresh token flows.
+* **feature:** integrated dynamic fetching of City, Zone, and Area data from Pathao.
+* **feature:** added delivery price calculation API integration for merchants.
+* **improve:** enhanced admin popup form with better validation and order data handling.
+* **feature:** added support for special instructions in order creation.
+* **fix:** resolved multiple bugs related to API requests and data handling.
+* **refactor:** cleaned up and structured Pathao API service methods for better maintainability.
+* **chore:** applied formatting, cleanup, and compatibility improvements across the codebase.
+
 
 = 1.1 =
 * **New:** Pathao column on order list.

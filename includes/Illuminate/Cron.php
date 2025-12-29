@@ -1,13 +1,13 @@
 <?php
 
-namespace SpringDevs\Pathao\Illuminate;
+namespace ConversLabs\Pathao\Illuminate;
 
-use SpringDevs\Pathao\Facades\PathaoAPI;
+use ConversLabs\Pathao\Facades\PathaoAPI;
 
 /**
  * Class Cron
  *
- * @package SpringDevs\Pathao\Illuminate
+ * @package ConversLabs\Pathao\Illuminate
  */
 class Cron {
 

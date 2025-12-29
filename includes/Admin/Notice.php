@@ -1,6 +1,6 @@
 <?php
 
-namespace SpringDevs\Pathao\Admin;
+namespace ConversLabs\Pathao\Admin;
 
 /**
  * Display admin notices.

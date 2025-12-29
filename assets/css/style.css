@@ -1,0 +1,292 @@
+.pathao-notice-main {
+    padding: 0 30px 40px;
+}
+
+.ptc-modal {
+  position: fixed;
+  z-index: 999999;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ptc-modal-content {
+  background: #fff;
+  width: 60%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 10px;
+  padding: 25px 30px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.2);
+}
+
+.ptc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ptc-header img {
+  height: 40px;
+}
+
+.ptc-section {
+  background: #f9fafc;
+  border: 1px solid #e5e7eb;
+  padding: 15px 18px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.ptc-section h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 17px;
+  color: #333;
+}
+
+.ptc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 12px;
+}
+
+.ptc-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.ptc-field label {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.ptc-field input,
+.ptc-field select,
+.ptc-field textarea {
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+}
+
+.ptc-field textarea {
+  min-height: 70px;
+}
+
+.ptc-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  position: sticky;
+  bottom: 0;
+  padding-top: 10px;
+  background: #fff;
+}
+
+.ptc-btn-primary {
+  background: #e51f28;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ptc-btn-primary:hover {
+  background: #c61a20;
+}
+
+.ptc-btn-secondary {
+  background: #f3f4f6;
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.ptc-btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+
+.ptc-order-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ptc-order-item img {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+}
+
+.ptc-product-name {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+
+
+  
+/* Sections */
+.ptc-section {
+  margin-bottom: 20px;
+}
+
+/* Grid */
+.ptc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+/* Fields */
+.ptc-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.ptc-field input,
+.ptc-field select,
+.ptc-field textarea {
+  width: 100%;
+}
+ 
+
+/* Buttons */
+.ptc-btn-primary {
+  background: #2271b1;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.ptc-btn-secondary {
+  background: #f0f0f1;
+  border: 1px solid #ccc;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+/* Table wrapper */
+.pathao-table-wrap {
+  overflow-x: auto;
+}
+ 
+
+
+/* Container Spacing */
+.pathao-order-page {
+    margin-top: 20px;
+}
+
+/* Filter Form Layout */
+.pathao-filter-form {
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    margin-bottom: 20px;
+}
+
+.pathao-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 15px;
+}
+
+.pathao-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.pathao-filter-item span {
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.pathao-filter-item input, 
+.pathao-filter-item select {
+    height: 30px;
+    line-height: 2;
+}
+
+/* Action Bar Styles */
+.pathao-action-bar {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+}
+
+.pathao-sync-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    margin-top: 4px;
+    margin-right: 4px;
+}
+
+/* Table container styling */
+.pathao-table-container {
+    margin-top: 10px;
+}
+
+
+
+/* Sidebar Form Styling */
+.pathao-sidebar-wrapper .form-field {
+    margin-bottom: 12px;
+}
+
+.pathao-sidebar-wrapper label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.pathao-sidebar-wrapper select,
+.pathao-sidebar-wrapper input[type="text"],
+.pathao-sidebar-wrapper textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.pathao-sidebar-wrapper .required {
+    color: #d63638;
+    text-decoration: none;
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+/* Hidden dynamic fields */
+.pathao-dynamic-field {
+    display: none;
+}
+
+/* Footer & Spinner Alignment */
+.pathao-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.pathao-sidebar-wrapper .spinner.pathao-shipping-spinner {
+    float: none;
+    margin: 0;
+    visibility: hidden; /* Hide until processing */
+}
+
+.pathao-sidebar-wrapper .spinner.is-active {
+    visibility: visible;
+}
+

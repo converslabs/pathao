@@ -1,8 +1,8 @@
 <?php
 
-namespace SpringDevs\Pathao\Facades;
+namespace ConversLabs\Pathao\Facades;
 
-use SpringDevs\Pathao\Services\PathaoApiService;
+use ConversLabs\Pathao\Services\PathaoApiService;
 
 /**
  * PathaoAPI facade.
@@ -15,7 +15,11 @@ use SpringDevs\Pathao\Services\PathaoApiService;
  * @method static \StdClass price_calculation(array $args)
  * @method static \StdClass generate_tokens(array $args)
  * @method static \StdClass refresh_tokens()
+ * @method static \StdClass create_store(array $payload)
  */
+
+// I'll add temporary, careful request/response logging inside generate_tokens() (masking client_secret/password) so we can see the API response details — then I'll update the todo list.
+
 class PathaoAPI {
 
 	/**

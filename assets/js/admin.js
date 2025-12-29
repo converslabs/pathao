@@ -1,383 +1,163 @@
 jQuery(document).ready(function ($) {
-	const nonce = $('#pathao_send_order_nonce').val();
 
-	$('#pathao_city').selectWoo();
-	$('#pathao_zone').selectWoo();
-	$('#pathao_area').selectWoo();
-	getCities();
+    if (typeof pathao_vars === 'undefined') {
+        console.error('pathao_vars is missing');
+        return;
+    }
 
-	$('#pathao-setup').on('submit', async function (e) {
-		e.preventDefault();
+    const AJAX_URL = pathao_vars.ajax_url;
+    const NONCE = pathao_vars.nonce;
 
-		$('#submit').prop('disabled', true);
-		$('.pathao-setup-spinner').addClass('is-active');
-		$('.notice').remove();
+    /* ---------------------------------------------------
+     * Helpers
+     * --------------------------------------------------- */
+    function ajaxPost(action, data, cb) {
+        $.post(
+            AJAX_URL,
+            {
+                action: action,
+                nonce: NONCE,
+                ...data,
+            },
+            cb
+        );
+    }
 
-		await $.ajax({
-			type: 'post',
-			dataType: 'json',
-			url: pathao_admin_obj.ajax_url,
-			data: {
-				action: 'setup_pathao',
-				_wpnonce: $('#_wp_setup_nonce').val(),
-				client_id: $('#pathao_client_id').val(),
-				client_secret: $('#pathao_client_secret').val(),
-				client_username: $('#pathao_client_username').val(),
-				client_password: $('#pathao_client_password').val(),
-				sandbox_mode: $('#pathao_sandbox_mode').is(':checked'),
-			},
-			success: function (res) {
-				if (res.success) {
-					$('.pathao-notice').after(
-						'<div class="notice notice-success is-dismissible"><p><b>Token generated successfully !!</b></p><button id="dismiss-message" class="notice-dismiss" type="button"><span class="screen-reader-text">Dismiss this notice.</span></button></div>'
-					);
-					$('#dismiss-message').click(function (event) {
-						event.preventDefault();
-						$('.' + 'notice-success').fadeTo(100, 0, function () {
-							$('.' + 'notice-success').slideUp(100, function () {
-								$('.' + 'notice-success').remove();
-							});
-						});
-					});
-					$('#pathao_access_token').val(res.access_token);
-					$('#pathao_refresh_token').val(res.refresh_token);
-					window.location.reload();
-				} else {
-					$('.pathao-notice').after(
-						'<div class="notice notice-error is-dismissible"><p><b>' +
-						res.messages[0] +
-						'</b></p><button id="dismiss-message" class="notice-dismiss" type="button"><span class="screen-reader-text">Dismiss this notice.</span></button></div>'
-					);
-					$('#dismiss-message').click(function (event) {
-						event.preventDefault();
-						$('.' + 'notice-error').fadeTo(100, 0, function () {
-							$('.' + 'notice-error').slideUp(100, function () {
-								$('.' + 'notice-error').remove();
-							});
-						});
-					});
-				}
-			},
-			error: function (error) {
-				console.log(error);
-			},
-		});
+    /* ---------------------------------------------------
+     * Pathao Setup: Generate Token (Sandbox / Live)
+     * --------------------------------------------------- */
+    $('#pathao-setup').on('submit', function (e) {
+        e.preventDefault();
 
-		$('#submit').prop('disabled', false);
-		$('.pathao-setup-spinner').removeClass('is-active');
-	});
+        const $form = $(this);
+        const $spinner = $('.pathao-setup-spinner');
+        const $notice = $('.pathao-notice');
 
-	if ($('#pathao_city').val() && $('#pathao_city').val() !== '') {
-		getZones($('#pathao_city').val());
-	}
+        $notice.empty();
+        $spinner.addClass('is-active');
 
-	$('#pathao_city').on('change', function () {
-		const city = $(this).val();
+        const payload = {
+            _wp_setup_nonce: $form.find('input[name="_wp_setup_nonce"]').val(),
+            client_id: $('#pathao_client_id').val(),
+            client_secret: $('#pathao_client_secret').val(),
+            username: $('#pathao_client_username').val(),
+            password: $('#pathao_client_password').val(),
+            sandbox_mode: $('#pathao_sandbox_mode').is(':checked') ? 1 : 0,
+        };
 
-		getZones(city);
-	});
+        $.post(
+            AJAX_URL,
+            {
+                action: 'pathao_setup_generate_token',
+                ...payload,
+            },
+            function (res) {
+                $spinner.removeClass('is-active');
 
-	$('#pathao_zone').on('change', function () {
-		const zone = $(this).val();
+                if (!res || !res.success) {
+                    const msg = res && res.data && res.data.message ? res.data.message : 'Failed to generate token';
+                    $notice.html('<div class="notice notice-error"><p>' + msg + '</p></div>');
+                    return;
+                }
 
-		if (!zone || '' == zone) {
-			$('#pathao_area_select').hide();
-			return false;
-		}
+                const data = res.data || {};
 
-		$('#pathao_submit_shipping').prop('disabled', true);
-		$('.pathao-shipping-spinner').addClass('is-active');
+                if (data.access_token) {
+                    $('#pathao_access_token').val(data.access_token);
+                }
+                if (data.refresh_token) {
+                    $('#pathao_refresh_token').val(data.refresh_token);
+                }
 
-		$.ajax({
-			type: 'post',
-			dataType: 'json',
-			url: pathao_admin_obj.ajax_url,
-			data: {
-				action: 'get_zone_areas',
-				zone: zone,
-				nonce,
-				order_id: pathao_admin_obj.order_id,
-			},
-			success: function (res) {
-				$('#pathao_area').html(
-					'<option value="">No Area Selected</option>'
-				);
-				$.each(res.areas, function (key, value) {
-					$('#pathao_area').append(
-						'<option value="' +
-						value.id +
-						'"' +
-						`${value.id == res.value ? ' selected' : ''}` +
-						'>' +
-						value.name +
-						'</option>'
-					);
-				});
+                $notice.html('<div class="notice notice-success"><p>' + (data.message || 'Token generated successfully') + '</p></div>');
+            }
+        );
+    });
 
-				$('#pathao_area_select').show();
-				$('#pathao_submit_shipping').prop('disabled', false);
-				$('.pathao-shipping-spinner').removeClass('is-active');
-			},
-			error: function (error) {
-				console.log(error);
-			},
-		});
-	});
+    /* ---------------------------------------------------
+     * City → Zone
+     * --------------------------------------------------- */
+    $(document).on('change', '#ptc-city', function () {
+        const cityId = $(this).val();
+        if (!cityId) return;
 
-	$('#pathao_submit_shipping').on('click', function () {
-		const order_id = $('#pathao_order_id').val();
-		const store = $('#pathao_store').val();
-		const delivery_type = $('#pathao_delivery_type').val();
-		const city = $('#pathao_city').val();
-		const zone = $('#pathao_zone').val();
-		const area = $('#pathao_area').val();
-		const item_description = $('#pathao_item_description').val();
-		const special_instruction = $('#pathao_special_instruction').val();
-		const amount = parseFloat($('#pathao_amount').val());
-		const item_weight = parseFloat($('#pathao_weight').val());
-		const item_type = $('#pathao_item_type').val();
+        $('#ptc-zone').html('<option>Loading…</option>');
+        $('#ptc-area').html('<option value="">Select Area</option>');
 
-		if (order_id == '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select order',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+        ajaxPost('get_city_zones', { city: cityId }, function (res) {
+            const $zone = $('#ptc-zone');
+            $zone.empty().append('<option value="">Select Zone</option>');
 
-		if (store == '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select store',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+            if (res.success && res.data && res.data.zones) {
+                res.data.zones.forEach((z) => {
+                    $zone.append(`<option value="${z.id}">${z.name}</option>`);
+                });
+            }
+        });
 
-		if (delivery_type == '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select delivery type',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+    });
 
-		if (item_type == '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select item type',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+    /* ---------------------------------------------------
+     * Zone → Area
+     * --------------------------------------------------- */
+    $(document).on('change', '#ptc-zone', function () {
+        const zoneId = $(this).val();
+        if (!zoneId) return;
 
-		if (city != '' && zone == '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select zone',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+        $('#ptc-area').html('<option>Loading…</option>');
 
-		if (item_weight == '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select total weight',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+         ajaxPost('get_zone_areas', { zone: zoneId }, function (res) {
+            const $area = $('#ptc-area');
+            $area.empty().append('<option value="">Select Area</option>');
 
-		if (!isInteger(item_weight) && !isFloat(item_weight)) {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Total weight should be numeric',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+            if (res.success && res.data && res.data.areas) {
+                res.data.areas.forEach((a) => {
+                    $area.append(`<option value="${a.id}">${a.name}</option>`);
+                });
+            }
+        });
 
-		if (amount === '') {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Please select amount',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+    });
 
-		if (!isInteger(amount)) {
-			$.toast({
-				position: 'bottom-center',
-				text: 'Amount should be numeric',
-				icon: 'error',
-				hideAfter: 6000,
-			});
-			return false;
-		}
+    /* ---------------------------------------------------
+     * Price Calculation
+     * --------------------------------------------------- */
+    function calculatePathaoPrice() {
+        const city = $('#ptc-city').val();
+        const zone = $('#ptc-zone').val();
+        const weight = $('#ptc-weight').val() || 0.5;
+        const deliveryType = $('#ptc-delivery-type').val() || 48;
+        const itemType = $('#ptc-item-type').val() || 2;
 
-		$('#pathao_submit_shipping').prop('disabled', true);
-		$('.pathao-shipping-spinner').addClass('is-active');
+        if (!city || !zone) return;
 
-		$.ajax({
-			type: 'post',
-			dataType: 'json',
-			url: pathao_admin_obj.ajax_url,
-			data: {
-				action: 'send_order_to_pathao',
-				order_id: order_id,
-				nonce: nonce,
-				store: store,
-				delivery_type: delivery_type,
-				city: city,
-				zone: zone,
-				area: area,
-				special_instruction: special_instruction,
-				item_description: item_description,
-				item_weight: item_weight,
-				item_type: item_type,
-				amount: amount,
-			},
-			success: function (res) {
-				if (res.success) {
-					$.toast({
-						position: 'bottom-center',
-						text: res.message,
-						icon: 'success',
-						hideAfter: 6000,
-					});
-					setTimeout(function () {
-						window.location.reload();
-					}, 3000);
-				} else {
-					$('#pathao_submit_shipping').prop('disabled', false);
-					$('.pathao-shipping-spinner').removeClass('is-active');
-					const errors = res.errors;
-					$.each(errors, function (key, value) {
-						$.toast({
-							position: 'bottom-center',
-							text: value,
-							icon: 'error',
-							hideAfter: 6000,
-						});
-					});
-				}
-			},
-			error: function (error) {
-				$('#pathao_submit_shipping').prop('disabled', false);
-				$('.pathao-shipping-spinner').removeClass('is-active');
-				console.log(error);
-			},
-		});
-	});
+        $('#ptc-collectable').val('Calculating…');
+        ajaxPost(
+            'pathao_price_calculation',
+            {
+                recipient_city: city,
+                recipient_zone: zone,
+                item_weight: weight,
+                delivery_type: deliveryType,
+                item_type: itemType,
+            },
+            function (res) {
+                if (res.success && res.data) {
+                    if (payment_status === 'Unpaid') {
+                        $('#ptc-collectable').val(order_total);
+                    } else {
+                        $('#ptc-collectable').val(0);
+                    }
 
-	function getZones(city) {
-		$('#pathao_area_select').hide();
-		$('#pathao_area').find('option').remove();
-		if (city == '') {
-			$('#pathao_zone_select').hide();
-			return false;
-		}
+                } else {
+                    $('#ptc-collectable').val('—');
+                }
+            }
+        );
+    }
 
-		$('#pathao_submit_shipping').prop('disabled', true);
-		$('.pathao-shipping-spinner').addClass('is-active');
+    $(document).on('change', '#ptc-city, #ptc-zone, #ptc-weight, #ptc-delivery-type, #ptc-item-type', calculatePathaoPrice);
 
-		$.ajax({
-			type: 'post',
-			dataType: 'json',
-			url: pathao_admin_obj.ajax_url,
-			data: {
-				action: 'get_city_zones',
-				city: city,
-				nonce,
-				order_id: pathao_admin_obj.order_id,
-			},
-			success: function (res) {
-				$('#pathao_zone').html(
-					'<option value="">No Zone Selected</option>'
-				);
-				$.each(res.zones, function (key, value) {
-					$('#pathao_zone').append(
-						'<option value="' +
-						value.id +
-						'"' +
-						`${value.id == res.value ? ' selected' : ''}` +
-						'>' +
-						value.name +
-						'</option>'
-					);
-				});
-
-				$('#pathao_zone_select').show();
-				$('#pathao_submit_shipping').prop('disabled', false);
-				$('.pathao-shipping-spinner').removeClass('is-active');
-				$('#pathao_zone')
-					.val(res.value ?? res.zones[0].zone_id)
-					.change();
-			},
-			error: function (error) {
-				console.log(error);
-			},
-		});
-	}
-
-	function getCities() {
-		$('#pathao_submit_shipping').prop('disabled', true);
-		$('.pathao-shipping-spinner').addClass('is-active');
-
-		$.ajax({
-			type: 'post',
-			dataType: 'json',
-			url: pathao_admin_obj.ajax_url,
-			data: {
-				action: 'get_cities',
-				nonce,
-				order_id: pathao_admin_obj.order_id,
-			},
-			success: function (res) {
-				$('#pathao_city').html(
-					'<option value="">No City Selected</option>'
-				);
-				$.each(res.cities, function (key, value) {
-					$('#pathao_city').append(
-						'<option value="' +
-						value.id +
-						'"' +
-						`${value.id == res.value ? ' selected' : ''}` +
-						'>' +
-						value.name +
-						'</option>'
-					);
-				});
-				if (res.value) {
-					getZones(res.value);
-				}
-
-				$('#pathao_submit_shipping').prop('disabled', false);
-				$('.pathao-shipping-spinner').removeClass('is-active');
-			},
-			error: function (error) {
-				console.log(error);
-			},
-		});
-	}
+ 
+ 
 });
-
-function isInteger(n) {
-	return n === +n && n === (n | 0);
-}
-
-function isFloat(n) {
-	return Number(n) === n && n % 1 !== 0;
-}

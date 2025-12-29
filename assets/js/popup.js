@@ -1,0 +1,192 @@
+jQuery(document).ready(function ($) { 
+    if (typeof pathao_vars === "undefined") {
+        console.error("pathao_vars is missing");
+        return;
+    }
+
+    const AJAX_URL = pathao_vars.ajax_url;
+    const NONCE    = pathao_vars.nonce;
+
+    /* ---------------- MODAL ---------------- */
+    function openPathaoModal(orderId) {
+        $("#ptc-modal").fadeIn();
+        $("#ptc-send-confirm").data("order-id", orderId);
+
+        loadOrderData(orderId);
+        loadCities(orderId);
+    }
+
+    function closePathaoModal() {
+        $("#ptc-modal").fadeOut();
+    }
+
+        $(document).on("click", ".ptc-open-modal-button", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openPathaoModal($(this).data("order-id"));
+    }); 
+
+    $(document).on("click", "#ptc-send-cancel", closePathaoModal);
+
+
+    // City, Zone, and Area data is missing. Please preload it to continue.
+    /* ---------------- ORDER INFO ---------------- */
+      function loadOrderData(orderId) {
+            $.post(AJAX_URL, {
+                action: "get_wc_order_info",
+                order_id: orderId,
+                nonce: NONCE
+            }, function (res) {
+
+                if (!res || !res.success) {
+                    console.error("Order info error:", res);
+                    return;
+                }
+
+                const data = res.data;
+
+                $("#ptc-name").val(data.name);
+                $("#ptc-phone").val(data.phone);
+                $("#ptc-address").val(data.address);
+                $("#ptc-weight").val(data.weight);
+                $("#ptc-quantity").val(data.quantity);
+                $("#ptc-total-price").val(data.total);
+                $("#ptc-payment-status").val(data.payment_status);
+                $("#ptc-order-number").val(orderId);
+                $("#ptc-collectable").val(data.cod_amount);
+                $("#ptc-store").val(data.store_name);
+
+                renderOrderItems(data.items);
+            });
+        }
+
+
+    
+    function renderOrderItems(items) {
+    const $container = $("#ptc-order-items");
+    $container.empty();
+
+    if (!items || !items.length) {
+        $container.html("<em>No items found</em>");
+        return;
+    }
+
+    items.forEach(item => {
+        const html = `
+            <div class="ptc-order-item">
+                <img src="${item.image}" alt="${item.name}">
+                <span class="ptc-product-name">${item.name}</span>
+            </div>
+        `;
+        $container.append(html);
+    });
+    }
+
+
+    /* ---------------- CITIES ---------------- */
+        function loadCities(orderId) {
+        $.post(AJAX_URL, {
+            action: "get_cities",
+            order_id: orderId,
+            nonce: NONCE
+        }, function (res) {
+
+            const $city = $("#ptc-city").empty()
+                .append('<option value="">Select City</option>');
+
+            if (!res || !res.success || !res.data?.cities) {
+                console.error("City API error:", res);
+                return;
+            }
+
+            res.data.cities.forEach(city => {
+                $city.append(`<option value="${city.id}">${city.name}</option>`);
+            });
+        });
+         }
+
+    /* ---------------- ZONES ---------------- */
+     $("#ptc-city").on("change", function () {
+    $.post(AJAX_URL, {
+        action: "get_city_zones",
+        city: $(this).val(),
+        nonce: NONCE
+    }, function (res) {
+
+        const $zone = $("#ptc-zone")
+            .empty()
+            .append('<option value="">Select Zone</option>');
+
+        if (!res || !res.success || !res.data?.zones) {
+            console.error("Zone error:", res);
+            return;
+        }
+
+        res.data.zones.forEach(zone => {
+            $zone.append(`<option value="${zone.id}">${zone.name}</option>`);
+        });
+    });
+});
+
+
+    /* ---------------- AREAS ---------------- */
+     $("#ptc-zone").on("change", function () {
+    $.post(AJAX_URL, {
+        action: "get_zone_areas",
+        zone: $(this).val(),
+        nonce: NONCE
+    }, function (res) {
+
+        const $area = $("#ptc-area")
+            .empty()
+            .append('<option value="">Select Area</option>');
+
+        if (!res || !res.success || !res.data?.areas) {
+            console.error("Area error:", res);
+            return;
+        }
+
+        res.data.areas.forEach(area => {
+            $area.append(`<option value="${area.id}">${area.name}</option>`);
+        });
+    });
+});
+
+    /* ---------------- SEND ORDER ---------------- */
+        $("#ptc-send-confirm").on("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const orderId = $(this).data("order-id");
+
+        const formData = $("#ptc-pathao-form").serializeArray();
+
+    console.log("   FORM DATA (serializeArray):", formData);
+
+        // Convert to object for readability
+    const formObject = {};
+    formData.forEach(item => {
+        formObject[item.name] = item.value;
+    });
+
+    console.log("   FORM DATA (object):", formObject);
+
+        $.post(AJAX_URL, {
+            action: "send_order_to_pathao",
+            order_id: orderId,
+            nonce: NONCE,
+            form: $("#ptc-pathao-form").serialize()
+        }, function (res) {
+
+            if (res.success) {
+                // closePathaoModal();
+                location.reload();
+            } else {
+                alert("Failed: " + (res.data?.message || "Unknown error"));
+                // keep modal open on failure
+            }
+
+        });
+    });
+
+});

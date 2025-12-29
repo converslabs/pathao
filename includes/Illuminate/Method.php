@@ -3,10 +3,10 @@
 /**
  * Class Method
  *
- * @package SpringDevs\Pathao\Illuminate\Method
+ * @package ConversLabs\Pathao\Illuminate\Method
  */
 
-namespace SpringDevs\Pathao\Illuminate;
+namespace ConversLabs\Pathao\Illuminate;
 
 /**
  * Class Method

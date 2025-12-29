@@ -1,9 +1,9 @@
 <?php
 
-namespace SpringDevs\Pathao;
+namespace ConversLabs\Pathao;
 
-use SpringDevs\Pathao\Illuminate\Cron;
-use SpringDevs\Pathao\Illuminate\Method;
+use ConversLabs\Pathao\Illuminate\Cron;
+use ConversLabs\Pathao\Illuminate\Method;
 
 /**
  * The Illuminate Class

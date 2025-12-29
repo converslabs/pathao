@@ -1,181 +1,253 @@
 <?php
+        namespace ConversLabs\Pathao\Admin;
 
-namespace SpringDevs\Pathao\Admin;
+        use ConversLabs\Pathao\Services\PathaoApiService;
+        use WC_Order;
+        if (!defined('ABSPATH')) {
+            exit;
+        }
 
-use WC_Order;
+        class Order
+        {
+            public function __construct()
+            {
+                add_action('add_meta_boxes', array($this, 'register_meta_boxes'));
+                add_action('pathao_order_created', array($this, 'store_log_after_creation'));
 
-/**
- * Admin order related stuffs.
- */
-class Order {
+                add_filter('manage_edit-shop_order_columns', array($this, 'add_custom_columns'));
+                add_filter('woocommerce_shop_order_list_table_columns', array($this, 'add_custom_columns'));
 
-	/**
-	 * The class contructor.
-	 */
-	public function __construct() {
-		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
-		add_action( 'pathao_order_created', array( $this, 'store_log_after_creation' ) );
+                add_action('manage_shop_order_posts_custom_column', array($this, 'add_custom_columns_data'), 10, 2);
 
-		// order columns.
-		add_filter( 'manage_edit-shop_order_columns', array( $this, 'add_custom_columns' ) );
-		add_filter( 'woocommerce_shop_order_list_table_columns', array( $this, 'add_custom_columns' ) );
-		add_action( 'manage_shop_order_posts_custom_column', array( $this, 'add_custom_columns_data' ), 10, 2 );
-		add_action( 'init', array( $this, 'load_hpos_hooks' ) );
-	}
+                add_action('init', array($this, 'load_hpos_hooks'));
 
-	/**
-	 * Load HPOS hooks here else `wc_get_page_screen_id` isn't available.
-	 */
-	public function load_hpos_hooks() {
-		add_action( 'manage_' . wc_get_page_screen_id( 'shop_order' ) . '_custom_column', array( $this, 'add_custom_columns_data' ), 10, 2 );
-	}
+                add_action('admin_footer', array($this, 'load_pathao_popup_view'));  
+ 
 
-	/**
-	 * Add Custom Column to Orders Table.
-	 *
-	 * @param array $columns Columns.
-	 *
-	 * @return array
-	 */
-	public function add_custom_columns( $columns ) {
-		$columns['sdevs_pathao_order_column'] = __( 'Pathao', 'sdevs_pathao' );
-		return $columns;
-	}
+            } 
+ 
 
-	/**
-	 * Add Custom Column Data.
-	 *
-	 * @param string        $column Column ID.
-	 * @param int|\WC_Order $post_id post_id or Order Obj.
-	 */
-	public function add_custom_columns_data( $column, $post_id ) {
-		if ( 'sdevs_pathao_order_column' === $column ) :
-			// check if post_id is order object.
-			$order = $post_id;
-			if ( 'object' !== gettype( $post_id ) ) {
-				$order = wc_get_order( $post_id );
-			}
-			$consignment_id = $order->get_meta( '_pathao_consignment_id' );
-			$status         = $order->get_meta( '_pathao_order_status' );
+         
 
-			?>
-			<div>
-				<?php if ( $consignment_id ) : ?>
-					<p>
-						<code>
-							<?php echo esc_html( $consignment_id ); ?>
-						</code>
-					</p>
-					<p><b>(<?php echo esc_html( $status ); ?>)</b></p>
-				<?php else : ?>
-					<p>-</p>
-				<?php endif; ?>
-			</div>
-			<?php
-		endif;
-	}
+            public function load_pathao_popup_view()
+            {
+                $view = plugin_dir_path(dirname(__DIR__)) . 'includes/Admin/views/admin-popup.php';
 
-	/**
-	 * Store log after pathao order created.
-	 *
-	 * @param mixed $res Response.
-	 */
-	public function store_log_after_creation( $res ) {
-		global $wpdb;
-		$log_table = $wpdb->prefix . 'pathao_logs';
-		$wpdb->insert(
-			$log_table,
-			array(
-				'order_id'          => (int) $res->merchant_order_id,
-				'consignment_id'    => $res->consignment_id,
-				'order_status'      => $res->order_status,
-				'order_status_slug' => $res->order_status,
-				'reason'            => 'Pathao Order created & it\'s pending.',
-				'updated_at'        => current_time( 'mysql' ),
-			)
-		);
-	}
+                if (file_exists($view)) {
+                    include $view;
+                } else {
+                    echo "<!-- Pathao Popup View Missing -->";
+                }
+            }
 
-	/**
-	 * Register metaboxes under order details page.
-	 */
-	public function register_meta_boxes() {
-		$screen = sdevs_wc_order_hpos_enabled()
-		? wc_get_page_screen_id( 'shop-order' )
-		: 'shop_order';
+             public function update_order_info_from_pathao(int $order_id): void
+                {
+                    $order = wc_get_order($order_id);
+                    if (! $order) {
+                        return;
+                    }
 
-		// phpcs:ignore
-		if (  isset( $_GET['action'] ) && 'edit' === $_GET['action']) {
-			add_meta_box(
-				'pathao_order_wc',
-				__( 'Pathao Shipping', 'sdevs_pathao' ),
-				array( $this, 'pathao_shipping' ),
-				$screen,
-				'side',
-				'default'
-			);
-		}
-	}
+                    $consignment_id = $order->get_meta('_pathao_consignment_id');
+                    if (empty($consignment_id)) {
+                        return;
+                    }
 
-	/**
-	 * Display order shipping form and details.
-	 */
-	public function pathao_shipping() {
-		$order = wc_get_order( sdevs_wc_order_hpos_enabled() ? esc_html( $_GET['id'] ) : get_the_ID() );
-		if ( ! $order ) {
-			return;
-		}
-		$consignment_id = $order->get_meta( '_pathao_consignment_id' );
-		$status         = $order->get_meta( '_pathao_order_status' );
+                    $api = new PathaoApiService();
+                    $res = $api->get_order_by_merchant_order_id((string) $order_id);
 
-		if ( $consignment_id && ! in_array( $status, array( 'Pickup_Failed', 'Pickup_Cancelled', 'Delivery_Failed' ), true ) ) {
-			$this->display_pathao_details( $order );
-		} elseif ( $consignment_id && in_array( $status, array( 'Pickup_Failed', 'Pickup_Cancelled', 'Delivery_Failed' ), true ) ) {
-			$this->display_pathao_details( $order );
-			$this->pathao_shipping_form( $order );
-		} else {
-			$this->pathao_shipping_form( $order );
-		}
-	}
+                    if (empty($res->data)) {
+                        return;
+                    }
 
-	/**
-	 *  Display shipping details.
-	 *
-	 *  @param WC_Order $order Current order.
-	 */
-	public function display_pathao_details( WC_Order $order ) {
-		$consignment_id = $order->get_meta( '_pathao_consignment_id' );
-		$delivery_fee   = $order->get_meta( '_pathao_delivery_fee' );
-		$order_status   = $order->get_meta( '_pathao_order_status' );
-		include 'views/pathao-shipping-details.php';
-	}
+                    $data = $res->data;
 
-	/**
-	 * Display shipping form.
-	 *
-	 * @param WC_Order $order Current order.
-	 */
-	public function pathao_shipping_form( WC_Order $order ) {
-		$order_id = $order->get_id();
-		wp_localize_script(
-			'pathao_admin_script',
-			'pathao_admin_obj',
-			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'order_id' => $order_id,
-			)
-		);
-		wp_enqueue_style( 'pathao_toast_styles' );
-		wp_enqueue_script( 'pathao_toast_script' );
-		wp_enqueue_script( 'pathao_admin_script' );
+                    if (! empty($data->consignment_id)) {
+                        update_post_meta($order_id, '_pathao_consignment_id', $data->consignment_id);
+                    }
 
-		$amount = is_sdevs_pathao_pro_activated() && $order->has_status( substr( sdevs_pathao_settings( 'paid_order_status', 'wc-paid' ), 3 ) ) ? 0 : $order->get_total();
+                    if (! empty($data->order_status)) {
+                        update_post_meta($order_id, '_pathao_order_status', $data->order_status);
+                    }
 
-		$all_totals       = sdevs_pathao_get_totals_from_items( $order );
-		$total_weight     = $all_totals->weight;
-		$item_description = $all_totals->item_description;
-		$status           = $order->get_meta( '_pathao_order_status' );
+                    if (isset($data->delivery_fee)) {
+                        update_post_meta($order_id, '_pathao_delivery_fee', $data->delivery_fee);
+                    }
+                }
 
-		include 'views/pathao-shipping.php';
-	}
-}
+            public function load_hpos_hooks()
+            {
+                add_action(
+                    'manage_' . \wc_get_page_screen_id('shop_order') . '_custom_column',
+                    array($this, 'add_custom_columns_data'),
+                    10,
+                    2
+                );
+            }
+
+            public function add_custom_columns($columns)
+            {
+                $columns['sdevs_pathao_order_column'] = __('Pathao', 'integration-of-pathao-for-woocommerce');
+                $columns['sdevs_pathao_status_column'] = __( 'Pathao Status', 'integration-of-pathao-for-woocommerce' );
+            $columns['sdevs_pathao_fee_column']    = __( 'Delivery Fee', 'integration-of-pathao-for-woocommerce' );
+                return $columns;
+            }
+
+            public function add_custom_columns_data( $column, $order ) {
+
+            if ( $order instanceof WC_Order ) {
+                $order_obj = $order;
+            } else {
+                $order_obj = wc_get_order( absint( $order ) );
+                if ( ! $order_obj ) {
+                    echo '—';
+                    return;
+                }
+            }
+
+            $order_id       = $order_obj->get_id();
+            $consignment_id = trim( $order_obj->get_meta( '_pathao_consignment_id' ) );
+            $pathao_status  = $order_obj->get_meta( '_pathao_order_status' ); 
+            $delivery_fee = (string) $order_obj->get_meta( '_pathao_delivery_fee', true );
+
+
+            switch ( $column ) {
+
+                /** Pathao Courier column */
+                case 'sdevs_pathao_order_column':
+
+                    $button = sprintf(
+                        '<button class="button button-primary ptc-open-modal-button" data-order-id="%d">Send To Pathao</button>',
+                        $order_id
+                    );
+
+                    if ( ! empty( $consignment_id ) ) {
+ 
+                        $base = get_option('pathao_sandbox_mode')
+                            ? 'https://merchant.pathao.com/courier/orders/'
+                            : 'https://merchant.pathao.com/courier/orders/';
+
+                        $url = $base . urlencode($consignment_id);
+
+
+                        echo sprintf(
+                            '<a href="%s" class="order-view" target="_blank">%s</a>',
+                            esc_url( $url ),
+                            esc_html( $consignment_id )
+                        );
+
+                    } else {
+                        echo '<span class="ptc-assign-area">' . $button . '</span>';
+                    }
+
+                    break;
+ 
+                case 'sdevs_pathao_status_column':
+                    echo esc_html( $pathao_status ?: '—' );
+                    break; 
+
+                case 'sdevs_pathao_fee_column':
+                    if ( $delivery_fee === '' ) {
+                    echo '—';
+                    } else {
+                        echo esc_html( $delivery_fee );
+                    }
+
+                    break;
+            }
+        }
+
+
+            public function store_log_after_creation( $res ) {
+                global $wpdb;
+ 
+                $order_id = 0;
+
+                if ( ! empty( $res->merchant_order_id ) ) {
+                    $order_id = (int) $res->merchant_order_id;
+                } elseif ( ! empty( $res->order_id ) ) {
+                    $order_id = (int) $res->order_id;
+                }
+
+                if ( ! $order_id ) {
+                    return;
+                }
+
+                $consignment_id = sanitize_text_field( $res->consignment_id ?? '' );
+                $order_status   = sanitize_text_field( $res->order_status ?? '' );
+
+                update_post_meta( $order_id, '_pathao_consignment_id', $consignment_id );
+                update_post_meta( $order_id, '_pathao_order_status', $order_status );
+
+                if ( ! empty( $res->delivery_fee ) ) {
+                    update_post_meta( $order_id, '_pathao_delivery_fee', $res->delivery_fee );
+                }
+
+                $wpdb->insert(
+                    $wpdb->prefix . 'pathao_logs',
+                    [
+                        'order_id'          => $order_id,
+                        'consignment_id'    => $consignment_id,
+                        'order_status'      => $order_status,
+                        'order_status_slug' => $order_status,
+                        'reason'            => "Pathao Order created & it's pending.",
+                        'updated_at'        => current_time('mysql'),
+                    ],
+                    ['%d','%s','%s','%s','%s','%s']
+                );
+            }
+
+
+
+            public function register_meta_boxes()
+            {
+                if (($_GET['action'] ?? '') === 'edit') {
+                    add_meta_box(
+                        'pathao_order_wc',
+                        __('Pathao Shipping', 'integration-of-pathao-for-woocommerce'),
+                        array($this, 'pathao_shipping'),
+                        'shop_order',
+                        'side',
+                        'default'
+                    );
+                }
+            }
+
+            public function pathao_shipping()
+            {
+                $order_id = isset($_GET['post'])
+                    ? absint($_GET['post'])
+                    : (isset($_GET['id']) ? absint($_GET['id']) : get_the_ID());
+
+                $order = wc_get_order($order_id);
+
+                if (!$order) return;
+
+                $consignment_id = $order->get_meta('_pathao_consignment_id');
+                $status = $order->get_meta('_pathao_order_status');
+
+                if ($consignment_id) {
+                    $this->display_pathao_details($order);
+                }
+
+                $this->pathao_shipping_form($order);
+            }
+
+            public function display_pathao_details(WC_Order $order)
+            {
+                $view = __DIR__ . '/views/pathao-shipping-details.php';
+
+                if (file_exists($view)) {
+                    include $view;
+                } else {
+                    echo '<p>Pathao details view missing.</p>';
+                }
+            }
+
+            public function pathao_shipping_form(WC_Order $order)
+            {
+                wp_localize_script('pathao_admin_script', 'pathao_admin_obj', [
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'order_id' => $order->get_id(),  
+                ]);
+            }
+        }
