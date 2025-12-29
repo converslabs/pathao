@@ -1,6 +1,6 @@
 <?php
 
-namespace SpringDevs\Pathao\Admin;
+namespace ConversLabs\Pathao\Admin;
 
 /**
  * The Settings class.
@@ -51,18 +51,24 @@ class Settings {
 	}
 
 	public function display_sandbox_notice() {
-		if ( empty( $_GET['section'] ) || 'pathao' !== $_GET['section'] || ! get_option( 'pathao_sandbox_mode' ) ) {
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$section = isset( $_GET['section'] ) ? sanitize_text_field( wp_unslash( $_GET['section'] ) ) : '';
+
+		if ( empty( $section ) || 'pathao' !== $section || ! get_option( 'pathao_sandbox_mode' ) ) {
 			return;
 		}
 		?>
 		<div class="notice notice-warning">
-			<p><?php esc_html_e( 'Sandbox mode is enabled.', 'sdevs_pathao' ); ?></p>
+			<p><?php esc_html_e( 'Sandbox mode is enabled.', 'integration-of-pathao-for-woocommerce' ); ?></p>
 		</div>
 		<?php
 	}
 
 	public function pro_version_notice() {
-		if ( ! is_sdevs_pathao_pro_activated() && isset( $_GET['section'] ) && 'pathao' === $_GET['section'] ) {
+	    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$section = isset( $_GET['section'] ) ? sanitize_text_field( wp_unslash( $_GET['section'] ) ) : '';
+
+		if ( ! is_sdevs_pathao_pro_activated() && 'pathao' === $section ) {
 			echo wp_kses_post( '<p style="color:red;">Pathao pro version required to work frontend shipping !</p>' );
 		}
 	}
@@ -83,14 +89,18 @@ class Settings {
 			)
 		);
 		wp_enqueue_style( 'pathao_toast_styles' );
+		wp_enqueue_style( 'pathao_styles' );
 		wp_enqueue_script( 'pathao_toast_script' );
 		wp_enqueue_script( 'pathao_admin_script' );
 	}
 
 	public function display_setup_settings() {
-		if ( ! isset( $_GET['section'] ) || 'pathao' !== $_GET['section'] ) {
-			return;
-		}
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$section = isset( $_GET['section'] ) ? sanitize_text_field( wp_unslash( $_GET['section'] ) ) : '';
+
+	if ( 'pathao' !== $section ) {
+		return;
+	}
 
 		include_once 'views/setup.php';
 	}
