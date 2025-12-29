@@ -727,9 +727,7 @@ class PathaoApiService
             }
 
             $status_code = wp_remote_retrieve_response_code($response);
-            $body = json_decode(wp_remote_retrieve_body($response));
-
-            // error_log(print_r($body, true));
+            $body = json_decode(wp_remote_retrieve_body($response)); 
 
             if ($status_code !== 200 || empty($body->data)) {
                 return (object) [
@@ -755,9 +753,7 @@ class PathaoApiService
         /*-----------------------------------------
     | PRICE CALCULATION (MERCHANT)
     ------------------------------------------*/
-        public function price_calculation($args)
-        {
-            error_log('[Pathao Price] price_calculation called');
+        public function price_calculation($args) 
 
             // Get store ID from settings
             $settings = get_option('woocommerce_pathao_settings');
@@ -785,9 +781,7 @@ class PathaoApiService
                     'success' => false,
                     'messages' => ['City and zone are required']
                 ];
-            }
-
-            error_log('[Pathao Price] Request payload: ' . wp_json_encode($body));
+            } 
 
             // Merchant endpoint + SOURCE header
             $token = $this->ensure_access_token();
@@ -801,13 +795,11 @@ class PathaoApiService
 
 
             // Transport / API errors
-            if ($err = $this->has_errors($res)) {
-                error_log('[Pathao Price] API error: ' . wp_json_encode($res, true));
+            if ($err = $this->has_errors($res)) { 
                 return $err;
             }
 
-            $raw_body = wp_remote_retrieve_body($res);
-            error_log('[Pathao Price] Raw response: ' . $raw_body);
+            $raw_body = wp_remote_retrieve_body($res); 
 
             $d = json_decode($raw_body);
 
