@@ -276,9 +276,7 @@ class Ajax
                 'zones' => $res->data
             ]);
         }
-
-        // Log error for debugging
-        error_log('[Pathao Zones AJAX] Failed: ' . print_r($res, true));
+ 
 
         wp_send_json_error([
             'message' => ! empty($res->messages) ? implode(', ', $res->messages) : 'Failed to load zones',
@@ -302,10 +300,7 @@ class Ajax
             wp_send_json_success([
                 'areas' => $res->data
             ]);
-        }
-
-        // Log error for debugging
-        error_log('[Pathao Areas AJAX] Failed: ' . print_r($res, true));
+        } 
 
         wp_send_json_error([
             'message' => ! empty($res->messages) ? implode(', ', $res->messages) : 'Failed to load areas',
@@ -332,8 +327,7 @@ class Ajax
             'recipient_zone'  => absint($_POST['recipient_zone'] ?? 0),
             'recipient_area' => absint($_POST['recipient_area'] ?? 0),
         ];
-
-        // error_log('[AJAX Price Args] ' . wp_json_encode($args));
+ 
 
         // Basic validation
         if (!$args['store_id']) {
@@ -346,8 +340,7 @@ class Ajax
 
         $res = $api->price_calculation($args);
 
-        if (empty($res->success)) {
-            error_log('[AJAX Price Failed] ' . wp_json_encode($res));
+        if (empty($res->success)) { 
             wp_send_json_error([
                 'message' => $res->messages[0] ?? 'Price calculation failed'
             ]);

@@ -62,9 +62,7 @@ class PathaoApiService
                 $args['headers'] ?? []
             );
 
-            $url = $this->get_base_url() . ltrim($path, '/');
-            // error_log("[Everything URL]: ". $url);
-            // error_log("[Everything]: ". print_r($final_args, true));
+            $url = $this->get_base_url() . ltrim($path, '/'); 
 
             // Always call the requested endpoint; previously a hardcoded URL broke all requests.
             $response = $func($url, $final_args);
@@ -197,8 +195,7 @@ class PathaoApiService
                 "aladdin/api/v1/cities/{$city_id}/zone-list"
             );
 
-            if ($err = $this->has_errors($res)) {
-                error_log('[Pathao Zone Error] ' . print_r($err, true));
+            if ($err = $this->has_errors($res)) { 
                 return $err;
             }
 
@@ -288,8 +285,7 @@ class PathaoApiService
             }
 
             $res = $this->request('wp_remote_get', 'aladdin/api/v1/stores');
-
-            error_log('[Pathao Stores] Response: ' . print_r($res, true));
+ 
             if ($err = $this->has_errors($res)) {
                 return $err;
             }
@@ -510,9 +506,7 @@ class PathaoApiService
                 'success' => false,
                 'messages' => ['Recipient phone must be 11 digits']
             ];
-        }
-
-        error_log('[Pathao API] Order Payload: ' . wp_json_encode($payload));
+        } 
 
         $res = $this->request(
             'wp_remote_post',
